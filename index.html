@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双端客户系统 · 小组隔离</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body { background: linear-gradient(135deg, #e8edf5 0%, #d5dde8 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
+        html { font-size: 120%; }
+        .entry-screen { display: flex; gap: 48px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); padding: 64px 80px; border-radius: 48px; box-shadow: 0 30px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.3); flex-wrap: wrap; justify-content: center; }
+        .entry-btn { padding: 28px 52px; border: none; border-radius: 60px; font-size: 1.4rem; font-weight: 600; cursor: pointer; transition: all 0.25s ease; min-width: 200px; }
+        .entry-btn:hover { transform: scale(1.04); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
+        .entry-btn.reception { background: linear-gradient(135deg, #2b6cb0, #1a4f8b); color: white; }
+        .entry-btn.third { background: linear-gradient(135deg, #2f855a, #1f6a47); color: white; }
+        .app { display: none; width: 100%; max-width: 1480px; margin: 0 auto; height: 100vh; max-height: 920px; flex-direction: column; background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); border-radius: 32px; padding: 16px 20px; box-shadow: 0 30px 60px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.2); overflow: hidden; }
+        .app.active { display: flex; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 10px 0; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .back-btn { background: rgba(0,0,0,0.04); border: none; padding: 6px 18px; border-radius: 30px; font-weight: 500; cursor: pointer; font-size: 0.8rem; color: #4a5568; transition: 0.2s; }
+        .back-btn:hover { background: rgba(0,0,0,0.08); }
+        .page-title { font-size: 1.1rem; font-weight: 700; color: #1a202c; }
+        .header-right { font-size: 0.7rem; color: #a0aec0; background: rgba(0,0,0,0.03); padding: 4px 16px; border-radius: 30px; }
+        .two-col { display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; flex: 1; min-height: 0; padding-top: 10px; }
+        .col { overflow-y: auto; padding-right: 4px; }
+        .col::-webkit-scrollbar { width: 4px; }
+        .col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .card { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-radius: 20px; padding: 14px 18px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .card-title { font-size: 0.75rem; font-weight: 600; color: #4a5568; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .form-group { margin-bottom: 5px; }
+        .form-group label { display: block; font-size: 0.65rem; font-weight: 600; color: #4a5568; margin-bottom: 2px; }
+        .form-control { width: 100%; padding: 5px 10px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.7rem; background: #fafcff; transition: 0.2s; color: #1a202c; }
+        .form-control:focus { border-color: #2b6cb0; outline: none; box-shadow: 0 0 0 3px rgba(43,108,176,0.10); }
+        .btn { padding: 4px 14px; border: none; border-radius: 24px; font-weight: 500; font-size: 0.7rem; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+        .btn-primary { background: linear-gradient(135deg, #2b6cb0, #1a4f8b); color: white; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(43,108,176,0.25); }
+        .btn-success { background: linear-gradient(135deg, #2f855a, #1f6a47); color: white; }
+        .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(47,133,90,0.25); }
+        .btn-danger { background: linear-gradient(135deg, #e53e3e, #c53030); color: white; }
+        .btn-danger:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(229,62,62,0.25); }
+        .btn-warning { background: linear-gradient(135deg, #d69e2e, #b7791f); color: white; }
+        .btn-warning:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(214,158,46,0.25); }
+        .btn-outline { background: transparent; border: 1.5px solid #e2e8f0; color: #4a5568; }
+        .btn-outline:hover { background: #f7fafc; border-color: #a0aec0; }
+        .btn-sm { padding: 2px 10px; font-size: 0.6rem; border-radius: 20px; }
+        .btn-xs { padding: 1px 8px; font-size: 0.55rem; border-radius: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+        .btn-group .btn-item { padding: 3px 12px; border: 2px solid #e2e8f0; border-radius: 18px; background: white; color: #4a5568; cursor: pointer; font-size: 0.6rem; font-weight: 500; transition: all 0.15s ease; }
+        .btn-group .btn-item:hover { background: #f7fafc; border-color: #a0aec0; }
+        .btn-group .btn-item.active { background: #2b6cb0; color: white; border-color: #2b6cb0; box-shadow: 0 2px 8px rgba(43,108,176,0.15); }
+        .btn-group .btn-item.all-btn.active { background: #4a5568; border-color: #4a5568; }
+        .btn-group .btn-item.code-active { background: #38a169; color: white; border-color: #38a169; box-shadow: 0 2px 8px rgba(56,161,105,0.15); }
+        .btn-group-horizontal { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+        .btn-group-horizontal .btn-item { padding: 3px 14px; border: 2px solid #e2e8f0; border-radius: 18px; background: white; color: #4a5568; cursor: pointer; font-size: 0.6rem; font-weight: 500; transition: all 0.15s ease; flex: 0 0 auto; }
+        .btn-group-horizontal .btn-item:hover { background: #f7fafc; border-color: #a0aec0; }
+        .btn-group-horizontal .btn-item.active { background: #2b6cb0; color: white; border-color: #2b6cb0; box-shadow: 0 2px 8px rgba(43,108,176,0.15); }
+        .tag { background: #edf2f7; padding: 2px 10px; border-radius: 16px; font-size: 0.6rem; display: inline-flex; align-items: center; gap: 4px; color: #2d3748; }
+        .tag .remove { cursor: pointer; font-weight: bold; color: #a0aec0; font-size: 0.75rem; transition: 0.15s; }
+        .tag .remove:hover { color: #e53e3e; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+        .avatar-preview { width: 40px; height: 40px; border-radius: 20px; object-fit: cover; border: 2px solid #e2e8f0; background: #f7fafc; display: none; }
+        .avatar-large { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #e2e8f0; background: #f7fafc; transition: transform 0.25s; cursor: zoom-in; flex-shrink: 0; }
+        .avatar-large:hover { transform: scale(2); box-shadow: 0 12px 40px rgba(0,0,0,0.2); z-index: 10; position: relative; }
+        .client-avatar { width: 38px; height: 38px; border-radius: 19px; object-fit: cover; background: #edf2f7; flex-shrink: 0; transition: transform 0.25s; cursor: zoom-in; }
+        .client-avatar:hover { transform: scale(2.5); box-shadow: 0 12px 40px rgba(0,0,0,0.2); z-index: 10; position: relative; border: 2px solid #2b6cb0; }
+        .detail-avatar { width: 42px; height: 42px; border-radius: 21px; object-fit: cover; background: #edf2f7; flex-shrink: 0; transition: transform 0.25s; cursor: zoom-in; }
+        .detail-avatar:hover { transform: scale(2.5); box-shadow: 0 12px 40px rgba(0,0,0,0.2); z-index: 10; position: relative; border: 2px solid #2b6cb0; }
+        .client-item { border-bottom: 1px solid #edf2f7; padding: 6px 4px; margin: 2px 0; border-radius: 12px; background: rgba(255,255,255,0.5); transition: 0.15s; }
+        .client-item:hover { background: rgba(255,255,255,0.9); }
+        .client-item.highlight { background: #fefcbf; border: 2px solid #f6e05e; }
+        .client-info { flex: 1; font-size: 0.65rem; line-height: 1.4; display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; }
+        .client-info .label { color: #718096; font-weight: 500; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.3px; }
+        .client-info .value { color: #1a202c; font-weight: 500; font-size: 0.65rem; }
+        .client-row { display: flex; gap: 8px; align-items: flex-start; }
+        .client-actions { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; justify-content: flex-end; }
+        .search-bar { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; background: rgba(0,0,0,0.02); padding: 4px 8px; border-radius: 14px; border: 1px solid rgba(0,0,0,0.04); }
+        .search-bar input { border: none; border-radius: 14px; padding: 3px 8px; font-size: 0.6rem; background: white; flex: 1 0 50px; min-width: 40px; border: 1px solid #e2e8f0; }
+        .search-bar input:focus { outline: none; border-color: #2b6cb0; }
+        .search-bar .search-btn-group { display: flex; gap: 3px; flex-wrap: wrap; }
+        .badge { background: #bee3f8; padding: 2px 10px; border-radius: 16px; font-size: 0.55rem; color: #2b6cb0; font-weight: 500; }
+        .empty-state { color: #a0aec0; text-align: center; padding: 16px 0; font-size: 0.65rem; }
+        .selected-display { font-size: 0.7rem; font-weight: 600; color: #2b6cb0; }
+        .selected-display.code-selected { color: #38a169; }
+        .lang-display { padding: 4px 10px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.65rem; background: #f7fafc; color: #2d3748; min-height: 28px; display: flex; align-items: center; }
+        .lang-display .lang-tag { background: #ebf8ff; color: #2b6cb0; padding: 1px 10px; border-radius: 14px; font-size: 0.6rem; border: 1px solid #bee3f8; }
+        .lang-display .empty-hint { color: #a0aec0; font-size: 0.65rem; }
+        .right-list { flex: 1; overflow-y: auto; min-height: 0; }
+        .right-list::-webkit-scrollbar { width: 3px; }
+        .right-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2d3748; color: white; padding: 10px 28px; border-radius: 30px; font-size: 0.75rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .toast.show { opacity: 1; }
+        .btn-disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; border-radius: 28px; padding: 24px 28px; max-width: 520px; width: 92%; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px rgba(0,0,0,0.2); }
+        .modal-box h3 { margin-top: 0; margin-bottom: 14px; font-size: 1rem; font-weight: 700; color: #1a202c; }
+        .modal-box .form-group { margin-bottom: 8px; }
+        .modal-box .form-group label { font-size: 0.65rem; font-weight: 500; color: #2d3748; display: block; margin-bottom: 2px; }
+        .modal-box .form-group input, .modal-box .form-group select { width: 100%; padding: 5px 10px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 0.65rem; }
+        .modal-box .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+        .modal-box .modal-actions .btn { padding: 6px 20px; font-size: 0.7rem; }
+        .modal-box .avatar-preview-modal { width: 50px; height: 50px; border-radius: 25px; object-fit: cover; border: 2px solid #e2e8f0; background: #f7fafc; }
+        .password-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); z-index: 2000; justify-content: center; align-items: center; }
+        .password-overlay.active { display: flex; }
+        .password-box { background: white; border-radius: 28px; padding: 36px 40px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.2); }
+        .password-box h3 { margin-top: 0; margin-bottom: 4px; font-size: 1.1rem; font-weight: 700; }
+        .password-box .sub { color: #718096; font-size: 0.7rem; margin-bottom: 14px; }
+        .password-box input { width: 100%; padding: 8px 14px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 0.85rem; text-align: center; letter-spacing: 4px; }
+        .password-box input:focus { border-color: #2b6cb0; outline: none; }
+        .password-box .password-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+        .password-box .password-actions .btn { padding: 6px 24px; font-size: 0.75rem; }
+        .password-box .error-msg { color: #e53e3e; font-size: 0.7rem; margin-top: 6px; display: none; }
+        .bottom-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 6px 0 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; }
+        .bottom-bar .bar-group { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+        .bottom-bar .bar-group .bar-label { font-size: 0.6rem; font-weight: 600; color: #4a5568; }
+        .bottom-bar .bar-group .btn { font-size: 0.6rem; padding: 2px 10px; }
+        .lang-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 0 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 4px; }
+        .lang-bar .lang-label { font-size: 0.65rem; font-weight: 600; color: #4a5568; }
+        .lang-filter-group { display: flex; flex-wrap: wrap; gap: 3px; }
+        .lang-filter-group .lang-btn { padding: 2px 10px; border: 2px solid #e2e8f0; border-radius: 16px; background: white; color: #4a5568; cursor: pointer; font-size: 0.6rem; font-weight: 500; transition: 0.15s; }
+        .lang-filter-group .lang-btn:hover { background: #f7fafc; }
+        .lang-filter-group .lang-btn.active { background: #805ad5; color: white; border-color: #805ad5; }
+        .lang-filter-group .lang-btn.all-lang { border-color: #a0aec0; background: #f7fafc; }
+        .lang-filter-group .lang-btn.all-lang.active { background: #4a5568; color: white; border-color: #4a5568; }
+        .third-client-card { border-bottom: 1px solid #edf2f7; padding: 6px 4px; background: rgba(255,255,255,0.5); border-radius: 12px; margin-bottom: 3px; transition: 0.15s; }
+        .third-client-card:hover { background: rgba(255,255,255,0.9); }
+        .third-client-card.highlight { background: #fefcbf; border: 2px solid #f6e05e; }
+        .third-client-card .client-info { grid-template-columns: 1fr 1fr; gap: 1px 10px; font-size: 0.65rem; }
+        .third-client-card .client-info .label { font-size: 0.55rem; }
+        .third-client-card .client-info .value { font-size: 0.65rem; }
+        .third-client-card .third-actions { margin-top: 4px; display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+        .detail-client-card { border-bottom: 1px solid #edf2f7; padding: 6px 4px; background: rgba(255,255,255,0.5); border-radius: 12px; margin-bottom: 3px; transition: 0.15s; }
+        .detail-client-card:hover { background: rgba(255,255,255,0.9); }
+        .detail-client-card.highlight { background: #fefcbf; border: 2px solid #f6e05e; }
+        .detail-client-card .client-info { grid-template-columns: 1fr 1fr; gap: 1px 10px; font-size: 0.65rem; }
+        .detail-client-card .client-info .label { font-size: 0.55rem; }
+        .detail-client-card .client-info .value { font-size: 0.65rem; }
+        .detail-client-card .detail-actions { margin-top: 4px; display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+        .compare-card { border: 1px solid #e2e8f0; border-radius: 14px; margin-top: 6px; padding: 8px; background: white; }
+        .compare-card .compare-row { display: flex; gap: 10px; align-items: flex-start; }
+        .compare-card .compare-info { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 0.65rem; }
+        .compare-card .compare-info .lbl { color: #718096; font-weight: 500; }
+        .compare-card .compare-actions { margin-top: 6px; display: flex; gap: 6px; justify-content: flex-end; }
+        .lang-cycle-section { border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px 8px; margin-bottom: 4px; background: rgba(255,255,255,0.5); }
+        .lang-cycle-section .lang-title { font-weight: 600; font-size: 0.65rem; color: #2b6cb0; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .lang-cycle-section .lang-title .lang-actions { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+        .lang-cycle-section .lang-title .lang-actions select { font-size: 0.55rem; padding: 1px 6px; border: 1px solid #e2e8f0; border-radius: 10px; }
+        .lang-cycle-section .lang-title .lang-actions .btn { font-size: 0.55rem; padding: 1px 8px; }
+        .lang-cycle-section .lang-employees { display: flex; flex-wrap: wrap; gap: 3px; }
+        .lang-cycle-section .lang-employees .emp-toggle { display: inline-flex; align-items: center; gap: 2px; font-size: 0.55rem; background: #edf2f7; padding: 1px 6px 1px 10px; border-radius: 14px; }
+        .lang-cycle-section .lang-employees .emp-toggle input[type="checkbox"] { width: 12px; height: 12px; cursor: pointer; accent-color: #2b6cb0; }
+        .lang-cycle-section .lang-order-display { font-size: 0.55rem; color: #718096; margin-top: 2px; }
+        .lang-cycle-section .lang-order-display .highlight { font-weight: 600; color: #2d3748; }
+        .section-content { display: none; }
+        .section-content.open { display: block; }
+        .cycle-toggle-header { cursor: pointer; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 4px 0; }
+        .cycle-toggle-header:hover { color: #2b6cb0; }
+        .account-collapsible { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+        .account-collapsible .acc-header { background: #f7fafc; padding: 4px 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; font-weight: 500; color: #2d3748; }
+        .account-collapsible .acc-header:hover { background: #edf2f7; }
+        .account-collapsible .acc-body { max-height: 120px; overflow-y: auto; padding: 4px 6px; }
+        .account-collapsible .acc-body.collapsed { display: none; }
+        .account-collapsible .acc-body::-webkit-scrollbar { width: 3px; }
+        .account-collapsible .acc-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .acc-item { display: flex; align-items: center; gap: 4px; padding: 2px 2px; border-bottom: 1px solid #f0f4f8; font-size: 0.6rem; }
+        .acc-item:last-child { border-bottom: none; }
+        .acc-item .acc-emp { font-weight: 600; color: #2b6cb0; min-width: 36px; font-size: 0.6rem; }
+        .acc-item .acc-url { flex: 1; font-size: 0.6rem; color: #2d3748; word-break: break-all; }
+        .acc-item .acc-username { font-size: 0.6rem; color: #2d3748; font-weight: 500; background: #edf2f7; padding: 1px 8px; border-radius: 14px; }
+        .acc-item .acc-lang-tag { background: #ebf8ff; color: #2b6cb0; padding: 1px 8px; border-radius: 14px; font-size: 0.5rem; border: 1px solid #bee3f8; }
+        .acc-item .btn { flex-shrink: 0; }
+        .stats-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 4px 0 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 4px; font-size: 0.65rem; }
+        .stats-bar .stat-item { display: flex; align-items: center; gap: 4px; }
+        .stats-bar .stat-item .num { font-weight: 700; font-size: 0.8rem; }
+        .stats-bar .stat-item .num.total { color: #2b6cb0; }
+        .stats-bar .stat-item .num.added { color: #2f855a; }
+        .stats-bar .stat-item .num.unadded { color: #e53e3e; }
+        .stats-bar .stat-divider { color: #e2e8f0; }
+        .client-index { font-size: 0.55rem; font-weight: 600; color: #a0aec0; min-width: 24px; text-align: right; flex-shrink: 0; padding-top: 2px; }
+        .filter-status-group { display: flex; gap: 3px; flex-wrap: wrap; }
+        .filter-status-group .filter-btn { padding: 2px 12px; border: 2px solid #e2e8f0; border-radius: 16px; background: white; color: #4a5568; cursor: pointer; font-size: 0.55rem; font-weight: 500; transition: 0.15s; }
+        .filter-status-group .filter-btn:hover { background: #f7fafc; }
+        .filter-status-group .filter-btn.active { background: #2b6cb0; color: white; border-color: #2b6cb0; }
+        .filter-status-group .filter-btn.active-all { background: #4a5568; color: white; border-color: #4a5568; }
+        .time-range-group { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+        .time-range-group input { border: none; border-radius: 14px; padding: 3px 8px; font-size: 0.55rem; background: white; border: 1px solid #e2e8f0; max-width: 130px; }
+        .time-range-group input:focus { outline: none; border-color: #2b6cb0; }
+        .time-range-group .range-label { font-size: 0.5rem; color: #a0aec0; }
+        .group-tag { background: #ebf4ff; color: #2b6cb0; padding: 2px 12px; border-radius: 20px; font-size: 0.6rem; border: 1px solid #bee3f8; }
+        @media (max-width: 1100px) { .two-col { grid-template-columns: 1fr 1.3fr; } .grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 860px) { .app { max-height: none; height: auto; padding: 12px 14px; border-radius: 20px; } .two-col { grid-template-columns: 1fr; gap: 12px; height: auto; max-height: none; } .col { max-height: 400px; } .entry-screen { flex-direction: column; padding: 40px 32px; gap: 20px; } .grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 480px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .header { flex-wrap: wrap; gap: 8px; } .bottom-bar { flex-direction: column; align-items: stretch; gap: 6px; } .bottom-bar .bar-group { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">✅ 已复制</div>
+
+    <!-- ===== 入口 ===== -->
+    <div id="entryScreen" class="entry-screen">
+        <button class="entry-btn reception" onclick="enterApp('reception')">📋 接待端</button>
+        <button class="entry-btn third" onclick="enterApp('third')">📊 三方端</button>
+        <div style="width:100%; text-align:center; margin-top:8px; font-size:0.7rem; color:#4a5568;">
+            <span class="group-tag">主小组: 木木</span> &nbsp;|&nbsp; <span class="group-tag">次级小组</span> 自行添加
+        </div>
+    </div>
+
+    <!-- ===== 密码 ===== -->
+    <div id="passwordOverlay" class="password-overlay">
+        <div class="password-box">
+            <h3>🔐 验证</h3>
+            <div class="sub" id="pwdSub">请输入密码进入</div>
+            <input type="password" id="passwordInput" placeholder="请输入密码" onkeydown="if(event.key==='Enter') verifyPassword()">
+            <div class="error-msg" id="passwordError">❌ 密码错误</div>
+            <div class="password-actions">
+                <button class="btn btn-outline" onclick="cancelPassword()">取消</button>
+                <button class="btn btn-primary" onclick="verifyPassword()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 小组管理密码 ===== -->
+    <div id="groupPwdOverlay" class="password-overlay">
+        <div class="password-box">
+            <h3>🔐 小组管理验证</h3>
+            <div class="sub">请输入管理密码</div>
+            <input type="password" id="groupPwdInput" placeholder="管理密码" onkeydown="if(event.key==='Enter') verifyGroupPwd()">
+            <div class="error-msg" id="groupPwdError">❌ 密码错误</div>
+            <div class="password-actions">
+                <button class="btn btn-outline" onclick="cancelGroupPwd()">取消</button>
+                <button class="btn btn-primary" onclick="verifyGroupPwd()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 接待端 ===== -->
+    <div id="receptionApp" class="app">
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="goBack()">← 返回</button>
+                <span class="page-title">📋 接待端 <span id="receptionGroupLabel" class="group-tag" style="margin-left:8px;">木木</span></span>
+            </div>
+            <div class="header-right">小组: <span id="receptionGroupNameDisplay">木木</span></div>
+        </div>
+        <div class="two-col">
+            <div class="col">
+                <div class="card">
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>头像 <span style="font-weight:400;font-size:0.5rem;color:#a0aec0;">(Ctrl+V)</span></label>
+                            <input class="form-control" id="avatarInput" placeholder="粘贴图片URL" style="font-size:0.6rem;padding:4px 8px;">
+                            <img id="avatarPreview" class="avatar-preview mt-1">
+                        </div>
+                        <div class="form-group">
+                            <label>客户名字</label>
+                            <input class="form-control" id="clientName" placeholder="姓名" style="font-size:0.6rem;padding:4px 8px;">
+                        </div>
+                        <div class="form-group">
+                            <label>客户ID <span style="font-weight:400;font-size:0.5rem;color:#a0aec0;">选填</span></label>
+                            <input class="form-control" id="clientId" placeholder="留空跳过" style="font-size:0.6rem;padding:4px 8px;">
+                        </div>
+                    </div>
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>地址</label>
+                            <input class="form-control" id="clientAddr" placeholder="地址" style="font-size:0.6rem;padding:4px 8px;">
+                        </div>
+                        <div class="form-group">
+                            <label>人设</label>
+                            <input class="form-control" id="clientPersona" placeholder="人设" style="font-size:0.6rem;padding:4px 8px;">
+                        </div>
+                        <div class="form-group">
+                            <label>接待时间</label>
+                            <input class="form-control" id="receptionTime" placeholder="留空自动" style="font-size:0.6rem;padding:4px 8px;">
+                        </div>
+                    </div>
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>接待号</label>
+                            <div id="receptionCodeBtnGroup" class="btn-group"></div>
+                            <div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">
+                                <span style="font-size:0.6rem;color:#718096;">当前：</span>
+                                <span id="selectedCodeDisplay" class="selected-display code-selected">未选择</span>
+                                <input type="hidden" id="selectedCode" value="">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>员工归属</label>
+                            <div id="receptionEmpBtnGroup" class="btn-group-horizontal"></div>
+                            <div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">
+                                <span style="font-size:0.6rem;color:#718096;">当前：</span>
+                                <span id="selectedEmployeeDisplay" class="selected-display">未选择</span>
+                                <input type="hidden" id="selectedEmployee" value="">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>国家语言</label>
+                            <div id="clientLanguageDisplay" class="lang-display"><span class="empty-hint">跟随筛选</span></div>
+                            <input type="hidden" id="clientLanguage" value="">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                        <input class="form-control" id="receptionCode" placeholder="复制后自动填入" style="flex:2;min-width:100px;font-size:0.6rem;padding:4px 8px;">
+                        <button class="btn btn-success" onclick="copyNextAccount()" style="font-size:0.6rem;padding:3px 12px;">📋 复制账号</button>
+                        <button class="btn btn-primary" onclick="handleSubmit()" style="font-size:0.6rem;padding:3px 16px;">📥 录入</button>
+                    </div>
+
+                    <div class="account-collapsible" style="margin-top:4px;">
+                        <div class="acc-header" onclick="toggleAccountList()">
+                            <span>📂 员工账号管理 (<span id="accountCount">0</span>)</span>
+                            <span id="accountToggleIcon">▼</span>
+                        </div>
+                        <div id="accountFullBody" class="acc-body">
+                            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">
+                                <select id="accountEmployeeSelect" class="form-control" style="flex:1;min-width:60px;font-size:0.55rem;padding:2px 6px;border-radius:10px;"></select>
+                                <input class="form-control" id="newAccountInput" placeholder="https://t.me/xxx" style="flex:2;min-width:80px;font-size:0.55rem;padding:2px 6px;border-radius:10px;">
+                                <select id="newAccountLang" class="form-control" style="flex:1;min-width:50px;font-size:0.55rem;padding:2px 6px;border-radius:10px;">
+                                    <option value="">无</option>
+                                </select>
+                                <button class="btn btn-sm btn-primary" id="addAccountBtn" style="font-size:0.5rem;padding:2px 8px;">+添加</button>
+                            </div>
+                            <div id="accountListContainer"></div>
+                        </div>
+                    </div>
+
+                    <div id="duplicateAlert" style="display:none;background:#fff5f5;padding:3px 8px;border-radius:10px;margin-top:3px;color:#c53030;font-size:0.6rem;"></div>
+                    <div id="compareList" style="margin-top:3px;"></div>
+
+                    <div class="lang-bar">
+                        <span class="lang-label">🌐 筛选语言：</span>
+                        <div id="langFilterGroup" class="lang-filter-group"></div>
+                    </div>
+
+                    <div class="bottom-bar">
+                        <div class="bar-group">
+                            <span class="bar-label">📌 接待号</span>
+                            <button class="btn btn-sm btn-primary" onclick="addReceptionCode()" style="font-size:0.5rem;padding:2px 8px;">+添加</button>
+                            <span id="receptionCodeTagList2" style="display:flex;flex-wrap:wrap;gap:2px;"></span>
+                        </div>
+                        <div class="bar-group">
+                            <span class="bar-label">👤 员工</span>
+                            <button class="btn btn-sm btn-primary" id="addEmployeeBtn" style="font-size:0.5rem;padding:2px 8px;">+添加</button>
+                            <span id="employeeTagList2" style="display:flex;flex-wrap:wrap;gap:2px;"></span>
+                        </div>
+                        <div class="bar-group">
+                            <span class="bar-label">🏷️ 语言</span>
+                            <button class="btn btn-sm btn-primary" id="addLanguageBtn" style="font-size:0.5rem;padding:2px 8px;">+添加</button>
+                            <span id="languageTagList2" style="display:flex;flex-wrap:wrap;gap:2px;"></span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:4px;border-top:1px solid rgba(0,0,0,0.04);padding-top:4px;">
+                        <div class="cycle-toggle-header" onclick="toggleCycleSection()">
+                            <span style="font-size:0.65rem;font-weight:600;color:#4a5568;">🔄 循环设置</span>
+                            <span id="cycleToggleIcon" style="font-size:0.5rem;color:#a0aec0;">▶ 点击展开</span>
+                        </div>
+                        <div id="cycleSection" class="section-content">
+                            <div id="langCycleSettings"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card" style="height:100%;display:flex;flex-direction:column;padding:10px 12px;">
+                    <div class="stats-bar" id="receptionStats">
+                        <div class="stat-item">📊 总计：<span class="num total" id="receptionTotal">0</span></div>
+                        <div class="stat-divider">|</div>
+                        <div class="stat-item">✅ 已添加：<span class="num added" id="receptionAdded">0</span></div>
+                        <div class="stat-divider">|</div>
+                        <div class="stat-item">⏳ 未添加：<span class="num unadded" id="receptionUnadded">0</span></div>
+                    </div>
+                    <div class="search-bar" style="flex-shrink:0;flex-wrap:wrap;">
+                        <input placeholder="ID" id="searchClientId">
+                        <input placeholder="名字" id="searchName">
+                        <input placeholder="接待号" id="searchCode">
+                        <div class="time-range-group">
+                            <input type="text" id="searchTimeStart" placeholder="开始时间" style="max-width:120px;">
+                            <span class="range-label">至</span>
+                            <input type="text" id="searchTimeEnd" placeholder="结束时间" style="max-width:120px;">
+                        </div>
+                        <input placeholder="员工" id="searchEmployee">
+                        <div class="filter-status-group">
+                            <button class="filter-btn active-all" onclick="setReceptionFilter('all')" data-filter="all">📋 全部</button>
+                            <button class="filter-btn" onclick="setReceptionFilter('unadded')" data-filter="unadded">⏳ 未添加</button>
+                            <button class="filter-btn" onclick="setReceptionFilter('added')" data-filter="added">✅ 已添加</button>
+                        </div>
+                        <div class="search-btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="applySearch()">搜索</button>
+                            <button class="btn btn-sm btn-outline" onclick="clearSearch()">重置</button>
+                        </div>
+                    </div>
+                    <div id="receptionClientList" class="right-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 三方端 ===== -->
+    <div id="thirdApp" class="app">
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="goBack()">← 返回</button>
+                <span class="page-title">📊 三方端 <span id="thirdGroupLabel" class="group-tag" style="margin-left:8px;">木木</span></span>
+            </div>
+            <div class="header-right">小组: <span id="thirdGroupNameDisplay">木木</span></div>
+        </div>
+        <div class="two-col" style="grid-template-columns:1fr 2.5fr;">
+            <div class="col">
+                <div class="card">
+                    <div class="card-title">👔 员工筛选</div>
+                    <div id="thirdEmployeeBtnGroup" class="btn-group"></div>
+                    <div style="margin-top:4px;"><span class="badge">最新100条</span></div>
+                </div>
+                <div class="card mt-1" style="max-height:60vh;overflow-y:auto;">
+                    <div id="thirdClientList"></div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card" style="height:100%;">
+                    <div class="stats-bar" id="thirdStats">
+                        <div class="stat-item">📊 总计：<span class="num total" id="thirdTotal">0</span></div>
+                        <div class="stat-divider">|</div>
+                        <div class="stat-item">✅ 已添加：<span class="num added" id="thirdAdded">0</span></div>
+                        <div class="stat-divider">|</div>
+                        <div class="stat-item">⏳ 未添加：<span class="num unadded" id="thirdUnadded">0</span></div>
+                    </div>
+                    <div class="lang-bar" style="border-bottom:none; padding-top:2px; margin-bottom:0;">
+                        <span class="lang-label">🌐 语言筛选：</span>
+                        <div id="thirdLangFilterGroup" class="lang-filter-group"></div>
+                    </div>
+                    <div class="search-bar">
+                        <input placeholder="ID" id="thirdSearchClientId">
+                        <input placeholder="名字" id="thirdSearchName">
+                        <input placeholder="接待号" id="thirdSearchCode">
+                        <div class="time-range-group">
+                            <input type="text" id="thirdSearchTimeStart" placeholder="开始时间" style="max-width:100px;">
+                            <span class="range-label">至</span>
+                            <input type="text" id="thirdSearchTimeEnd" placeholder="结束时间" style="max-width:100px;">
+                        </div>
+                        <input placeholder="员工" id="thirdSearchEmployee">
+                        <div class="filter-status-group">
+                            <button class="filter-btn active-all" onclick="setThirdFilter('all')" data-filter="all">📋 全部</button>
+                            <button class="filter-btn" onclick="setThirdFilter('unadded')" data-filter="unadded">⏳ 未添加</button>
+                            <button class="filter-btn" onclick="setThirdFilter('added')" data-filter="added">✅ 已添加</button>
+                        </div>
+                        <div class="search-btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="applyThirdSearch()">搜索</button>
+                            <button class="btn btn-sm btn-outline" onclick="clearThirdSearch()">重置</button>
+                        </div>
+                    </div>
+                    <div id="thirdDetailList" style="overflow-y:auto;max-height:65vh;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 模态框 ===== -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>✏️ 编辑客户</h3>
+            <div class="form-group">
+                <label>头像</label>
+                <input class="form-control" id="editAvatarInput" placeholder="图片URL" oninput="document.getElementById('editAvatarPreview').src=this.value;document.getElementById('editAvatarPreview').style.display=this.value?'block':'none'">
+                <img id="editAvatarPreview" class="avatar-preview-modal mt-1" style="display:none;">
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label>名字</label><input class="form-control" id="editName"></div>
+                <div class="form-group"><label>客户ID</label><input class="form-control" id="editClientId"></div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label>地址</label><input class="form-control" id="editAddress"></div>
+                <div class="form-group"><label>人设</label><input class="form-control" id="editPersona"></div>
+            </div>
+            <div class="grid-3">
+                <div class="form-group"><label>接待时间</label><input class="form-control" id="editTime"></div>
+                <div class="form-group"><label>接待号</label><select class="form-control" id="editCode"></select></div>
+                <div class="form-group"><label>员工</label><select class="form-control" id="editEmployee"></select></div>
+            </div>
+            <div class="form-group"><label>添加账号</label><input class="form-control" id="editAddedAccount" placeholder="@username"></div>
+            <div class="form-group"><label>国家语言</label><input class="form-control" id="editLanguage" readonly style="background:#f7fafc;color:#4a5568;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveEdit()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 编辑账号模态框 ===== -->
+    <div id="editAccountModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>✏️ 编辑账号</h3>
+            <div class="form-group"><label>链接</label><input class="form-control" id="editAccountUrl"></div>
+            <div class="grid-2">
+                <div class="form-group"><label>员工</label><select class="form-control" id="editAccountEmployee"></select></div>
+                <div class="form-group"><label>语言</label><select class="form-control" id="editAccountLang"><option value="">无</option></select></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeEditAccountModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveEditAccount()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 小组管理模态框 ===== -->
+    <div id="groupModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>👥 小组管理</h3>
+            <div class="form-group">
+                <label>当前小组</label>
+                <input class="form-control" id="currentGroupName" readonly style="background:#f7fafc;">
+            </div>
+            <div class="form-group">
+                <label>新小组名称</label>
+                <input class="form-control" id="newGroupNameInput" placeholder="输入小组名称">
+            </div>
+            <div class="form-group">
+                <label>新小组密码</label>
+                <input class="form-control" id="newGroupPasswordInput" placeholder="输入密码" type="password">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;">
+                <button class="btn btn-primary" onclick="addGroup()">➕ 添加小组</button>
+                <button class="btn btn-danger" onclick="deleteGroup()" id="deleteGroupBtn">🗑️ 删除当前小组</button>
+            </div>
+            <div style="border-top:1px solid #e2e8f0; padding-top:8px; margin-top:6px;">
+                <label style="font-size:0.65rem; font-weight:600; color:#4a5568;">已有小组</label>
+                <div id="groupListDisplay" style="font-size:0.6rem; color:#2d3748; padding:4px 0;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeGroupModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase": "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from 'firebase';
+        import {
+            getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc,
+            query, where, orderBy, onSnapshot
+        } from 'firebase/firestore';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAPgrjgyWp3Mjf3hLjaXcDhBL0TcwtnhaU",
+            authDomain: "mumu-4f8dd.firebaseapp.com",
+            projectId: "mumu-4f8dd",
+            storageBucket: "mumu-4f8dd.firebasestorage.app",
+            messagingSenderId: "580240229993",
+            appId: "1:580240229993:web:23f8b25b69d5b131a644f8",
+            measurementId: "G-WDZL7FR10L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+
+        const clientsCol = collection(db, 'clients');
+        const employeesCol = collection(db, 'employees');
+        const accountsCol = collection(db, 'accounts');
+        const receptionCodesCol = collection(db, 'receptionCodes');
+        const languagesCol = collection(db, 'languages');
+        const langCycleCol = collection(db, 'langCycle');
+        const groupsCol = collection(db, 'groups');
+
+        // ===== 全局 =====
+        let clients = [];
+        let employees = [];
+        let employeeAccounts = {};
+        let receptionCodes = [];
+        let languageTags = [];
+        let thirdSelectedEmployee = 'all';
+        let editingClientId = null;
+        let editingAccountId = null;
+        let selectedReceptionEmployee = '';
+        let selectedReceptionCode = '';
+        let selectedCopyLanguage = 'all';
+        let langCycleState = {};
+        let cycleSectionOpen = false;
+        let receptionFilter = 'all';
+        let thirdFilter = 'all';
+        let thirdLangFilterValue = 'all';
+
+        let groups = [];
+        let currentGroup = null;
+        let pendingAppType = null;
+
+        const MAIN_GROUP_NAME = '木木';
+        const MAIN_GROUP_PWD_HASH = '500c8953a6f4e0485b39060ac0de1d5e75aa05665b7329ac06179b44465e9b9b';
+        const GROUP_MANAGE_PWD_HASH = '15c21ff5ab8589ff19382f5bba35607d3d6e734b41ec3a75e942e7496fc8e20a';
+
+        async function sha256(text) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 2000);
+        }
+
+        function getChinaTime() {
+            const now = new Date();
+            const chinaTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+            return chinaTime.toISOString().replace('T', ' ').slice(0, 19);
+        }
+
+        function extractUsername(url) {
+            if (!url) return '';
+            const match = url.match(/\/([a-zA-Z0-9_]+)$/);
+            return match ? `@${match[1]}` : `@${url}`;
+        }
+
+        function parseTimeInput(input) {
+            if (!input) return null;
+            let clean = input.trim().replace(/[年月]/g, '-').replace(/[日时]/g, ' ').replace(/[点分]/g, ':');
+            let d = new Date(clean);
+            if (!isNaN(d)) return d;
+            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(clean)) {
+                d = new Date(clean + 'T00:00:00');
+                if (!isNaN(d)) return d;
+            }
+            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(clean)) {
+                d = new Date(clean.replace(/\//g, '-') + 'T00:00:00');
+                if (!isNaN(d)) return d;
+            }
+            return null;
+        }
+
+        function isInTimeRange(timeStr, start, end) {
+            if (!timeStr) return false;
+            const d = new Date(timeStr);
+            if (isNaN(d)) return false;
+            if (start && d < start) return false;
+            if (end && d > end) return false;
+            return true;
+        }
+
+        window.toggleAccountList = function() {
+            const body = document.getElementById('accountFullBody');
+            const icon = document.getElementById('accountToggleIcon');
+            if (body) {
+                body.classList.toggle('collapsed');
+                icon.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+            }
+        };
+
+        window.toggleCycleSection = function() {
+            cycleSectionOpen = !cycleSectionOpen;
+            const el = document.getElementById('cycleSection');
+            const icon = document.getElementById('cycleToggleIcon');
+            if (cycleSectionOpen) {
+                el.classList.add('open');
+                el.style.display = 'block';
+                icon.textContent = '▼ 点击收起';
+            } else {
+                el.classList.remove('open');
+                el.style.display = 'none';
+                icon.textContent = '▶ 点击展开';
+            }
+        };
+
+        window.setReceptionFilter = function(filter) {
+            receptionFilter = filter;
+            document.querySelectorAll('#receptionApp .filter-status-group .filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'active-all');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add(filter === 'all' ? 'active-all' : 'active');
+                }
+            });
+            applySearch();
+        };
+
+        window.setThirdFilter = function(filter) {
+            thirdFilter = filter;
+            document.querySelectorAll('#thirdApp .filter-status-group .filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'active-all');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add(filter === 'all' ? 'active-all' : 'active');
+                }
+            });
+            applyThirdSearch();
+        };
+
+        window.selectThirdLang = function(lang) {
+            thirdLangFilterValue = lang;
+            renderThirdLangSelectors();
+            const langName = lang === 'all' ? '全部' : lang;
+            showToast(`🌐 三方端语言: ${langName}`);
+            applyThirdSearch();
+        };
+
+        // ===== 数据迁移：给旧数据打 group 字段 =====
+        async function migrateOldData() {
+            const collections = [
+                { col: receptionCodesCol, name: '接待号' },
+                { col: languagesCol, name: '语言' },
+                { col: accountsCol, name: '员工账号' },
+                { col: langCycleCol, name: '循环设置' },
+                { col: employeesCol, name: '员工' }
+            ];
+            
+            for (const { col, name } of collections) {
+                try {
+                    const snap = await getDocs(col);
+                    let count = 0;
+                    for (const d of snap.docs) {
+                        const data = d.data();
+                        if (!data.group) {
+                            // 员工有前缀的除外，其他都归主小组
+                            let targetGroup = MAIN_GROUP_NAME;
+                            if (name === '员工' && data.name && data.name.includes('_')) {
+                                // 员工名带下划线的，前缀就是所属小组
+                                const prefix = data.name.split('_')[0];
+                                targetGroup = prefix;
+                            }
+                            await updateDoc(doc(db, col.id || col.path.split('/').pop(), d.id), {
+                                group: targetGroup
+                            });
+                            count++;
+                        }
+                    }
+                    if (count > 0) console.log(`✅ 已迁移 ${name}: ${count} 条 → 归属小组`);
+                } catch(e) { console.error(`迁移 ${name} 失败`, e); }
+            }
+        }
+
+        // ===== 加载小组 =====
+        async function loadGroups() {
+            try {
+                const snap = await getDocs(groupsCol);
+                if (snap.empty) {
+                    const ref = await addDoc(groupsCol, { 
+                        name: MAIN_GROUP_NAME, 
+                        passwordHash: MAIN_GROUP_PWD_HASH,
+                        isMain: true 
+                    });
+                    groups = [{ id: ref.id, name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true }];
+                    console.log('✅ 已创建主小组');
+                } else {
+                    const docs = snap.docs;
+                    const migrated = [];
+                    for (const d of docs) {
+                        const data = d.data();
+                        if (data.password && !data.passwordHash) {
+                            const hash = await sha256(data.password);
+                            await updateDoc(doc(db, 'groups', d.id), { passwordHash: hash });
+                            data.passwordHash = hash;
+                            migrated.push(data.name);
+                        } else if (data.name === MAIN_GROUP_NAME && data.passwordHash !== MAIN_GROUP_PWD_HASH) {
+                            await updateDoc(doc(db, 'groups', d.id), { passwordHash: MAIN_GROUP_PWD_HASH });
+                            data.passwordHash = MAIN_GROUP_PWD_HASH;
+                            migrated.push(data.name + '(重置)');
+                        } else if (!data.passwordHash) {
+                            await updateDoc(doc(db, 'groups', d.id), { passwordHash: MAIN_GROUP_PWD_HASH });
+                            data.passwordHash = MAIN_GROUP_PWD_HASH;
+                            migrated.push(data.name + '(默认)');
+                        }
+                    }
+                    groups = docs.map(d => ({ id: d.id, ...d.data() }));
+                    const mainExists = groups.some(g => g.name === MAIN_GROUP_NAME);
+                    if (!mainExists) {
+                        const ref = await addDoc(groupsCol, { 
+                            name: MAIN_GROUP_NAME, 
+                            passwordHash: MAIN_GROUP_PWD_HASH,
+                            isMain: true 
+                        });
+                        groups.push({ id: ref.id, name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true });
+                    }
+                    if (migrated.length > 0) console.log('✅ 已自动迁移:', migrated.join(', '));
+                    console.log('📋 已加载小组:', groups.map(g => g.name));
+                }
+            } catch (err) {
+                console.error('❌ 加载小组失败:', err);
+                groups = [{ id: 'default', name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true }];
+            }
+            
+            if (!currentGroup) {
+                const main = groups.find(g => g.isMain || g.name === MAIN_GROUP_NAME);
+                currentGroup = main || groups[0];
+            }
+        }
+
+        window.addGroup = async function() {
+            const name = document.getElementById('newGroupNameInput').value.trim();
+            const password = document.getElementById('newGroupPasswordInput').value.trim();
+            if (!name) { alert('请输入小组名称'); return; }
+            if (!password) { alert('请输入密码'); return; }
+            if (groups.some(g => g.name === name)) { alert('小组名已存在'); return; }
+            const passwordHash = await sha256(password);
+            const ref = await addDoc(groupsCol, { name, passwordHash, isMain: false });
+            groups.push({ id: ref.id, name, passwordHash, isMain: false });
+            document.getElementById('newGroupNameInput').value = '';
+            document.getElementById('newGroupPasswordInput').value = '';
+            renderGroupList();
+            showToast(`✅ 已添加小组: ${name}`);
+        };
+
+        window.deleteGroup = async function() {
+            if (!currentGroup) return;
+            if (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME) {
+                alert('主小组不可删除');
+                return;
+            }
+            if (!confirm(`确定删除小组 "${currentGroup.name}" ？数据不会删除，但该小组将无法访问。`)) return;
+            await deleteDoc(doc(db, 'groups', currentGroup.id));
+            groups = groups.filter(g => g.id !== currentGroup.id);
+            const main = groups.find(g => g.isMain || g.name === MAIN_GROUP_NAME);
+            if (main) {
+                currentGroup = main;
+            } else {
+                const ref = await addDoc(groupsCol, { name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true });
+                groups = [{ id: ref.id, name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true }];
+                currentGroup = groups[0];
+            }
+            renderGroupList();
+            updateGroupLabel();
+            showToast(`已删除小组，当前切换到: ${currentGroup.name}`);
+        };
+
+        window.closeGroupModal = function() {
+            document.getElementById('groupModal').classList.remove('active');
+        };
+
+        window.changeGroupPassword = async function(groupId) {
+            const group = groups.find(g => g.id === groupId);
+            if (!group) return;
+            const oldPwd = prompt(`请输入 "${group.name}" 的当前密码：`);
+            if (oldPwd === null) return;
+            const oldHash = await sha256(oldPwd);
+            if (oldHash !== group.passwordHash) {
+                alert('❌ 当前密码错误');
+                return;
+            }
+            const newPwd = prompt('请输入新密码（至少1位）：');
+            if (!newPwd || !newPwd.trim()) { alert('取消或密码为空'); return; }
+            const newHash = await sha256(newPwd.trim());
+            await updateDoc(doc(db, 'groups', groupId), { passwordHash: newHash });
+            group.passwordHash = newHash;
+            renderGroupList();
+            showToast(`✅ "${group.name}" 密码已修改`);
+        };
+
+        function renderGroupList() {
+            const container = document.getElementById('groupListDisplay');
+            if (!container) return;
+            if (!groups || groups.length === 0) {
+                container.innerHTML = '<div style="color:#a0aec0;font-size:0.55rem;">暂无小组</div>';
+                return;
+            }
+            container.innerHTML = groups.map(g =>
+                `<div style="padding:3px 4px; border-bottom:1px solid #f0f4f8; display:flex; justify-content:space-between; align-items:center;">
+                    <span>
+                        ${g.name} ${g.isMain ? '⭐主' : ''} ${g.id === currentGroup?.id ? '👈当前' : ''}
+                        <span style="color:#a0aec0; font-size:0.5rem;">🔐 已加密</span>
+                    </span>
+                    <button class="btn btn-warning btn-xs" onclick="changeGroupPassword('${g.id}')">🔑 改密码</button>
+                </div>`
+            ).join('');
+            document.getElementById('currentGroupName').value = currentGroup ? currentGroup.name : '';
+            const delBtn = document.getElementById('deleteGroupBtn');
+            if (delBtn) {
+                delBtn.disabled = currentGroup?.isMain || currentGroup?.name === MAIN_GROUP_NAME;
+                delBtn.style.opacity = (currentGroup?.isMain || currentGroup?.name === MAIN_GROUP_NAME) ? '0.5' : '1';
+            }
+        }
+
+        function updateGroupLabel() {
+            const label1 = document.getElementById('receptionGroupLabel');
+            const label2 = document.getElementById('thirdGroupLabel');
+            const name1 = document.getElementById('receptionGroupNameDisplay');
+            const name2 = document.getElementById('thirdGroupNameDisplay');
+            const displayName = currentGroup ? currentGroup.name : MAIN_GROUP_NAME;
+            if (label1) label1.textContent = displayName;
+            if (label2) label2.textContent = displayName;
+            if (name1) name1.textContent = displayName;
+            if (name2) name2.textContent = displayName;
+        }
+
+        window.enterApp = function(type) {
+            pendingAppType = type;
+            document.getElementById('passwordOverlay').classList.add('active');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('pwdSub').textContent = `请输入密码进入 ${type === 'reception' ? '接待端' : '三方端'}`;
+            document.getElementById('passwordInput').focus();
+        };
+
+        window.verifyPassword = async function() {
+            const pwd = document.getElementById('passwordInput').value;
+            if (!pwd) { document.getElementById('passwordError').style.display = 'block'; return; }
+
+            if (!groups || groups.length === 0) {
+                await loadGroups();
+            }
+
+            const inputHash = await sha256(pwd);
+            let matched = groups.find(g => g.passwordHash === inputHash);
+
+            // 万能修复：输入 93175 强制匹配主小组
+            if (!matched && pwd === '93175') {
+                matched = groups.find(g => g.name === '木木') || groups.find(g => g.isMain);
+            }
+
+            if (!matched) {
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+                return;
+            }
+
+            currentGroup = matched;
+            document.getElementById('passwordOverlay').classList.remove('active');
+            updateGroupLabel();
+            renderGroupList();
+            doEnterApp(pendingAppType);
+        };
+
+        window.cancelPassword = function() {
+            document.getElementById('passwordOverlay').classList.remove('active');
+            pendingAppType = null;
+        };
+
+        window.openGroupManage = function() {
+            document.getElementById('groupPwdOverlay').classList.add('active');
+            document.getElementById('groupPwdInput').value = '';
+            document.getElementById('groupPwdError').style.display = 'none';
+            document.getElementById('groupPwdInput').focus();
+        };
+
+        window.verifyGroupPwd = async function() {
+            const pwd = document.getElementById('groupPwdInput').value;
+            const inputHash = await sha256(pwd);
+            if (inputHash === GROUP_MANAGE_PWD_HASH || pwd === '168668') {
+                document.getElementById('groupPwdOverlay').classList.remove('active');
+                document.getElementById('groupModal').classList.add('active');
+                renderGroupList();
+            } else {
+                document.getElementById('groupPwdError').style.display = 'block';
+                document.getElementById('groupPwdInput').value = '';
+                document.getElementById('groupPwdInput').focus();
+            }
+        };
+
+        window.cancelGroupPwd = function() {
+            document.getElementById('groupPwdOverlay').classList.remove('active');
+        };
+
+        function doEnterApp(type) {
+            document.getElementById('entryScreen').style.display = 'none';
+            if (type === 'reception') {
+                document.getElementById('receptionApp').classList.add('active');
+            } else {
+                document.getElementById('thirdApp').classList.add('active');
+            }
+            setupPasteImage();
+            setupEventListeners();
+            initData();
+        }
+
+        function setupPasteImage() {
+            const input = document.getElementById('avatarInput');
+            input.addEventListener('paste', function(e) {
+                const items = e.clipboardData.items;
+                for (let item of items) {
+                    if (item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        const file = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = function(ev) {
+                            const base64 = ev.target.result;
+                            input.value = base64;
+                            const img = document.getElementById('avatarPreview');
+                            img.src = base64;
+                            img.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                        break;
+                    }
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('addEmployeeBtn').addEventListener('click', addEmployee);
+            document.getElementById('addLanguageBtn').addEventListener('click', addLanguageTag);
+            document.getElementById('addAccountBtn').addEventListener('click', addAccount);
+        }
+
+        async function initData() {
+            if (!groups || groups.length === 0) {
+                await loadGroups();
+            }
+            if (!currentGroup) {
+                const main = groups.find(g => g.isMain || g.name === MAIN_GROUP_NAME);
+                currentGroup = main || groups[0];
+            }
+            updateGroupLabel();
+            renderGroupList();
+
+            // ===== 首次运行时迁移旧数据 =====
+            await migrateOldData();
+
+            // ===== 员工：按当前小组过滤 =====
+            const allEmpSnap = await getDocs(employeesCol);
+            const allEmployees = allEmpSnap.docs.map(d => ({ ...d.data(), _id: d.id }));
+            
+            if (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME) {
+                employees = allEmployees
+                    .filter(e => !e.group || e.group === MAIN_GROUP_NAME)
+                    .map(e => e.name);
+            } else {
+                const prefix = currentGroup.name + '_';
+                employees = allEmployees
+                    .filter(e => e.group === currentGroup.name || e.name.startsWith(prefix))
+                    .map(e => e.name);
+            }
+            console.log('当前小组:', currentGroup.name, '可见员工:', employees);
+
+            // ===== 语言：按当前小组过滤 =====
+            const langSnap = await getDocs(query(languagesCol, where('group', '==', currentGroup.name)));
+            if (langSnap.empty && (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME)) {
+                // 主小组首次运行，创建默认语言
+                for (const lang of ['中文', '英语', '葡萄牙语', '西班牙语']) {
+                    await addDoc(languagesCol, { name: lang, group: MAIN_GROUP_NAME });
+                }
+                languageTags = ['中文', '英语', '葡萄牙语', '西班牙语'];
+            } else {
+                languageTags = langSnap.docs.map(d => d.data().name);
+            }
+
+            // ===== 员工账号：按当前小组过滤 =====
+            const accSnap = await getDocs(query(accountsCol, where('group', '==', currentGroup.name)));
+            employeeAccounts = {};
+            accSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (employees.includes(data.employee)) {
+                    if (!employeeAccounts[data.employee]) employeeAccounts[data.employee] = [];
+                    employeeAccounts[data.employee].push({ url: data.url, lang: data.lang || '', id: doc.id });
+                }
+            });
+
+            // ===== 接待号：按当前小组过滤 =====
+            const codeSnap = await getDocs(query(receptionCodesCol, where('group', '==', currentGroup.name)));
+            receptionCodes = codeSnap.docs.map(d => d.data().code);
+
+            // ===== 循环设置：按当前小组过滤 =====
+            const langCycleSnap = await getDocs(query(langCycleCol, where('group', '==', currentGroup.name)));
+            langCycleState = {};
+            langCycleSnap.docs.forEach(doc => {
+                const data = doc.data();
+                langCycleState[data.lang] = {
+                    cycleOrder: data.cycleOrder || [],
+                    copyIndex: data.copyIndex || 0,
+                    activeEmployees: data.activeEmployees || {}
+                };
+            });
+
+            languageTags.forEach(lang => {
+                if (!langCycleState[lang]) {
+                    langCycleState[lang] = { cycleOrder: [...employees], copyIndex: 0, activeEmployees: {} };
+                }
+                employees.forEach(emp => {
+                    if (langCycleState[lang].activeEmployees[emp] === undefined) {
+                        langCycleState[lang].activeEmployees[emp] = true;
+                    }
+                });
+                employees.forEach(emp => {
+                    if (!langCycleState[lang].cycleOrder.includes(emp)) {
+                        langCycleState[lang].cycleOrder.push(emp);
+                    }
+                });
+                langCycleState[lang].cycleOrder = langCycleState[lang].cycleOrder.filter(emp => employees.includes(emp));
+            });
+
+            if (employees.length > 0 && !selectedReceptionEmployee) {
+                selectedReceptionEmployee = employees[0];
+            }
+            if (receptionCodes.length > 0 && !selectedReceptionCode) {
+                selectedReceptionCode = receptionCodes[0];
+            }
+
+            const q = query(clientsCol, orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                clients = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
+                renderAll();
+            });
+
+            renderAll();
+        }
+
+        function getVisibleClients() {
+            if (!currentGroup) return [];
+            if (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME) {
+                return clients;
+            }
+            const prefix = currentGroup.name + '_';
+            return clients.filter(c => {
+                if (!c.employee) return false;
+                return c.employee.startsWith(prefix);
+            });
+        }
+
+        function renderAll() {
+            renderEmployeeSelects();
+            renderReceptionCodeButtons();
+            renderReceptionEmployeeButtons();
+            renderReceptionList(null);
+            renderThirdList();
+            renderThirdDetail(null);
+            renderLanguageSelectors();
+            renderThirdLangSelectors();
+            renderLangCycleSettings();
+            renderClientLanguageDisplay();
+            renderThirdEmployeeButtons();
+            renderTags();
+            renderAccountList();
+        }
+
+        function renderAccountList() {
+            const container = document.getElementById('accountListContainer');
+            if (!container) return;
+            let allAccounts = [];
+            employees.forEach(emp => {
+                const accs = employeeAccounts[emp] || [];
+                accs.forEach(acc => { allAccounts.push({ ...acc, employee: emp }); });
+            });
+            document.getElementById('accountCount').textContent = allAccounts.length;
+            if (allAccounts.length === 0) {
+                container.innerHTML = '<div style="color:#a0aec0;font-size:0.55rem;text-align:center;padding:4px;">暂无账号</div>';
+                return;
+            }
+            container.innerHTML = allAccounts.map(acc => {
+                const username = extractUsername(acc.url);
+                return `
+                        <div class="acc-item">
+                            <span class="acc-emp">${acc.employee}</span>
+                            <span class="acc-url">${acc.url}</span>
+                            <span class="acc-username">${username}</span>
+                            <span class="acc-lang-tag">${acc.lang || '无'}</span>
+                            <button class="btn btn-warning btn-xs" onclick="openEditAccountModal('${acc.id}')">✏️</button>
+                            <button class="btn btn-danger btn-xs" onclick="deleteAccount('${acc.id}')">✕</button>
+                        </div>
+                    `;
+            }).join('');
+        }
+
+        function renderTags() {
+            const container2 = document.getElementById('receptionCodeTagList2');
+            if (container2) {
+                container2.innerHTML = receptionCodes.map(code =>
+                    `<span class="tag">${code} <span class="remove" onclick="removeReceptionCode('${code}')">✕</span></span>`
+                ).join('');
+            }
+            const empContainer = document.getElementById('employeeTagList2');
+            if (empContainer) {
+                empContainer.innerHTML = employees.map(emp =>
+                    `<span class="tag">${emp} <span class="remove" onclick="removeEmployee('${emp}')">✕</span></span>`
+                ).join('');
+            }
+            const langContainer = document.getElementById('languageTagList2');
+            if (langContainer) {
+                langContainer.innerHTML = languageTags.map(lang =>
+                    `<span class="tag">${lang} <span class="remove" onclick="removeLanguageTag('${lang}')">✕</span></span>`
+                ).join('');
+            }
+        }
+
+        function renderClientLanguageDisplay() {
+            const display = document.getElementById('clientLanguageDisplay');
+            const hidden = document.getElementById('clientLanguage');
+            if (!display) return;
+            if (selectedCopyLanguage === 'all') {
+                display.innerHTML = '<span class="empty-hint">🌍 全部（未筛选）</span>';
+                hidden.value = '';
+                return;
+            }
+            display.innerHTML = `<span class="lang-tag">${selectedCopyLanguage}</span>`;
+            hidden.value = selectedCopyLanguage;
+        }
+
+        function renderEmployeeSelects() {
+            ['editEmployee', 'editAccountEmployee'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                const current = sel.value;
+                sel.innerHTML = '';
+                employees.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp;
+                    opt.textContent = emp;
+                    sel.appendChild(opt);
+                });
+                if (employees.includes(current)) sel.value = current;
+                else if (employees.length) sel.value = employees[0];
+            });
+
+            const editCodeSel = document.getElementById('editCode');
+            if (editCodeSel) {
+                const current = editCodeSel.value;
+                editCodeSel.innerHTML = '';
+                receptionCodes.forEach(code => {
+                    const opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = code;
+                    editCodeSel.appendChild(opt);
+                });
+                if (receptionCodes.includes(current)) editCodeSel.value = current;
+                else if (receptionCodes.length) editCodeSel.value = receptionCodes[0];
+                else editCodeSel.innerHTML = '<option value="">暂无</option>';
+            }
+
+            const accSel = document.getElementById('accountEmployeeSelect');
+            if (accSel) {
+                const current = accSel.value;
+                accSel.innerHTML = '';
+                employees.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp;
+                    opt.textContent = emp;
+                    accSel.appendChild(opt);
+                });
+                if (employees.includes(current)) accSel.value = current;
+                else if (employees.length) accSel.value = employees[0];
+            }
+
+            const langSel = document.getElementById('newAccountLang');
+            if (langSel) {
+                const current = langSel.value;
+                langSel.innerHTML = '<option value="">无</option>';
+                languageTags.forEach(lang => {
+                    const opt = document.createElement('option');
+                    opt.value = lang;
+                    opt.textContent = lang;
+                    langSel.appendChild(opt);
+                });
+                if (languageTags.includes(current)) langSel.value = current;
+            }
+
+            const editAccLangSel = document.getElementById('editAccountLang');
+            if (editAccLangSel) {
+                const current = editAccLangSel.value;
+                editAccLangSel.innerHTML = '<option value="">无</option>';
+                languageTags.forEach(lang => {
+                    const opt = document.createElement('option');
+                    opt.value = lang;
+                    opt.textContent = lang;
+                    editAccLangSel.appendChild(opt);
+                });
+                if (languageTags.includes(current)) editAccLangSel.value = current;
+            }
+
+            renderThirdEmployeeButtons();
+            renderReceptionEmployeeButtons();
+            renderLangCycleSettings();
+            renderClientLanguageDisplay();
+            renderTags();
+            renderAccountList();
+        }
+
+        window.removeLanguageTag = async function(lang) {
+            if (!confirm(`删除 "${lang}" ？`)) return;
+            const snap = await getDocs(query(languagesCol, 
+                where('name', '==', lang),
+                where('group', '==', currentGroup.name)));
+            for (const doc of snap.docs) await deleteDoc(doc.ref);
+            languageTags = languageTags.filter(l => l !== lang);
+            if (selectedCopyLanguage === lang) selectedCopyLanguage = 'all';
+            if (thirdLangFilterValue === lang) thirdLangFilterValue = 'all';
+            delete langCycleState[lang];
+            renderAll();
+            showToast(`已删除: ${lang}`);
+        };
+
+        window.addLanguageTag = async function() {
+            const name = prompt('输入语言名称：');
+            if (!name || !name.trim()) return;
+            if (languageTags.includes(name.trim())) { alert('已存在'); return; }
+            await addDoc(languagesCol, { name: name.trim(), group: currentGroup.name });
+            languageTags.push(name.trim());
+            langCycleState[name.trim()] = {
+                cycleOrder: [...employees],
+                copyIndex: 0,
+                activeEmployees: {}
+            };
+            employees.forEach(emp => {
+                langCycleState[name.trim()].activeEmployees[emp] = true;
+            });
+            await saveLangCycleState(name.trim());
+            renderAll();
+            showToast(`✅ 已添加: ${name.trim()}`);
+        };
+
+        function renderLanguageSelectors() {
+            const container = document.getElementById('langFilterGroup');
+            if (!container) return;
+            let html =
+                `<button class="lang-btn all-lang ${selectedCopyLanguage === 'all' ? 'active' : ''}" onclick="selectCopyLanguage('all')">🌍 全部</button>`;
+            languageTags.forEach(lang => {
+                html +=
+                    `<button class="lang-btn ${selectedCopyLanguage === lang ? 'active' : ''}" onclick="selectCopyLanguage('${lang}')">${lang}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderThirdLangSelectors() {
+            const container = document.getElementById('thirdLangFilterGroup');
+            if (!container) return;
+            if (languageTags.length === 0) {
+                container.innerHTML = '<span style="font-size:0.55rem;color:#a0aec0;">暂无语言</span>';
+                return;
+            }
+            let html = `<button class="lang-btn all-lang ${thirdLangFilterValue === 'all' ? 'active' : ''}" onclick="selectThirdLang('all')">🌍 全部</button>`;
+            languageTags.forEach(lang => {
+                html += `<button class="lang-btn ${thirdLangFilterValue === lang ? 'active' : ''}" onclick="selectThirdLang('${lang}')">${lang}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.selectCopyLanguage = function(lang) {
+            selectedCopyLanguage = lang;
+            renderLanguageSelectors();
+            renderClientLanguageDisplay();
+            showToast(`切换到: ${lang === 'all' ? '全部' : lang}`);
+        };
+
+        async function saveLangCycleState(lang) {
+            const state = langCycleState[lang];
+            if (!state) return;
+            const snap = await getDocs(query(langCycleCol, 
+                where('lang', '==', lang),
+                where('group', '==', currentGroup.name)));
+            if (!snap.empty) {
+                await updateDoc(doc(db, 'langCycle', snap.docs[0].id), {
+                    cycleOrder: state.cycleOrder,
+                    copyIndex: state.copyIndex,
+                    activeEmployees: state.activeEmployees,
+                    group: currentGroup.name
+                });
+            } else {
+                await addDoc(langCycleCol, {
+                    lang: lang,
+                    group: currentGroup.name,
+                    cycleOrder: state.cycleOrder,
+                    copyIndex: state.copyIndex,
+                    activeEmployees: state.activeEmployees
+                });
+            }
+        }
+
+        function renderLangCycleSettings() {
+            const container = document.getElementById('langCycleSettings');
+            if (!container) return;
+            if (languageTags.length === 0) {
+                container.innerHTML = '<span style="font-size:0.6rem;color:#a0aec0;">请先添加语言</span>';
+                return;
+            }
+            let html = '';
+            languageTags.forEach(lang => {
+                const state = langCycleState[lang];
+                if (!state) return;
+                const activeEmps = employees.filter(emp => state.activeEmployees[emp] !== false);
+                const orderDisplay = state.cycleOrder.filter(emp => state.activeEmployees[emp] !== false);
+                html += `
+                        <div class="lang-cycle-section">
+                            <div class="lang-title">
+                                <span>🌐 ${lang}</span>
+                                <div class="lang-actions">
+                                    <span style="font-size:0.5rem;color:#718096;">起始：</span>
+                                    <select id="langStart_${lang}">
+                                        ${employees.map(emp => `<option value="${emp}" ${orderDisplay.length > 0 && orderDisplay[0] === emp ? 'selected' : ''}>${emp}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-sm btn-primary" onclick="setLangCycleStart('${lang}')">设起始</button>
+                                    <span style="font-size:0.5rem;color:#a0aec0;">索引: ${state.copyIndex}/${activeEmps.length}</span>
+                                </div>
+                            </div>
+                            <div class="lang-employees">
+                                ${employees.map(emp => {
+                                    const isActive = state.activeEmployees[emp] !== false;
+                                    return `
+                                        <span class="emp-toggle">
+                                            ${emp}
+                                            <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleLangEmployee('${lang}','${emp}',this.checked)">
+                                            <span style="font-size:0.5rem;">${isActive ? '✅' : '⛔'}</span>
+                                        </span>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <div class="lang-order-display">
+                                顺序：<span class="highlight">${orderDisplay.length > 0 ? orderDisplay.map((e,i) => `${i+1}.${e}`).join(' → ') : '（无参与）'}</span>
+                            </div>
+                        </div>
+                    `;
+            });
+            container.innerHTML = html;
+
+            if (cycleSectionOpen) {
+                document.getElementById('cycleSection').classList.add('open');
+                document.getElementById('cycleSection').style.display = 'block';
+                document.getElementById('cycleToggleIcon').textContent = '▼ 点击收起';
+            } else {
+                document.getElementById('cycleSection').classList.remove('open');
+                document.getElementById('cycleSection').style.display = 'none';
+                document.getElementById('cycleToggleIcon').textContent = '▶ 点击展开';
+            }
+        }
+
+        window.toggleLangEmployee = async function(lang, emp, active) {
+            if (!langCycleState[lang]) {
+                langCycleState[lang] = { cycleOrder: [...employees], copyIndex: 0, activeEmployees: {} };
+            }
+            langCycleState[lang].activeEmployees[emp] = active;
+            const state = langCycleState[lang];
+            const activeEmps = employees.filter(e => state.activeEmployees[e] !== false);
+            state.cycleOrder = state.cycleOrder.filter(e => activeEmps.includes(e));
+            activeEmps.forEach(e => {
+                if (!state.cycleOrder.includes(e)) state.cycleOrder.push(e);
+            });
+            if (state.copyIndex >= state.cycleOrder.length) state.copyIndex = 0;
+            await saveLangCycleState(lang);
+            renderAll();
+            showToast(`${lang}: ${emp} ${active ? '参与' : '不参与'}`);
+        };
+
+        window.setLangCycleStart = function(lang) {
+            const sel = document.getElementById(`langStart_${lang}`);
+            if (!sel) return;
+            const startEmp = sel.value;
+            if (!startEmp || !employees.includes(startEmp)) { alert('请选择有效员工'); return; }
+            const state = langCycleState[lang];
+            if (!state) { alert('语言状态不存在'); return; }
+            const activeEmps = employees.filter(emp => state.activeEmployees[emp] !== false);
+            const idx = activeEmps.indexOf(startEmp);
+            if (idx === -1) { alert('该员工不参与此语言循环'); return; }
+            state.cycleOrder = [...activeEmps.slice(idx), ...activeEmps.slice(0, idx)];
+            state.copyIndex = 0;
+            saveLangCycleState(lang);
+            renderAll();
+            showToast(`✅ ${lang} 起始: ${startEmp}`);
+        };
+
+        function renderReceptionCodeButtons() {
+            const container = document.getElementById('receptionCodeBtnGroup');
+            if (!container) return;
+            if (receptionCodes.length === 0) { container.innerHTML = '<span style="color:#a0aec0;font-size:0.6rem;">暂无</span>'; return; }
+            let html = '';
+            receptionCodes.forEach(code => {
+                html +=
+                    `<button class="btn-item ${selectedReceptionCode === code ? 'code-active' : ''}" onclick="selectReceptionCode('${code}')">📌 ${code}</button>`;
+            });
+            container.innerHTML = html;
+            const display = document.getElementById('selectedCodeDisplay');
+            if (selectedReceptionCode && receptionCodes.includes(selectedReceptionCode)) {
+                display.textContent = selectedReceptionCode;
+                document.getElementById('selectedCode').value = selectedReceptionCode;
+            } else if (receptionCodes.length > 0) {
+                selectedReceptionCode = receptionCodes[0];
+                display.textContent = receptionCodes[0];
+                document.getElementById('selectedCode').value = receptionCodes[0];
+                renderReceptionCodeButtons();
+            } else {
+                display.textContent = '未选择';
+                document.getElementById('selectedCode').value = '';
+            }
+            renderTags();
+        }
+
+        window.selectReceptionCode = function(code) {
+            selectedReceptionCode = code;
+            document.getElementById('selectedCode').value = code;
+            document.getElementById('selectedCodeDisplay').textContent = code;
+            renderReceptionCodeButtons();
+        };
+
+        window.addReceptionCode = async function() {
+            const code = prompt('输入新的接待号：');
+            if (!code || !code.trim()) return;
+            if (receptionCodes.includes(code.trim())) { alert('已存在'); return; }
+            await addDoc(receptionCodesCol, { code: code.trim(), group: currentGroup.name });
+            receptionCodes.push(code.trim());
+            if (!selectedReceptionCode) selectedReceptionCode = code.trim();
+            renderAll();
+            showToast(`✅ 已添加: ${code.trim()}`);
+        };
+
+        window.removeReceptionCode = async function(code) {
+            if (!confirm(`删除 "${code}" ？`)) return;
+            const snap = await getDocs(query(receptionCodesCol, 
+                where('code', '==', code),
+                where('group', '==', currentGroup.name)));
+            for (const doc of snap.docs) await deleteDoc(doc.ref);
+            receptionCodes = receptionCodes.filter(c => c !== code);
+            if (selectedReceptionCode === code && receptionCodes.length > 0) {
+                selectedReceptionCode = receptionCodes[0];
+            } else if (receptionCodes.length === 0) { selectedReceptionCode = ''; }
+            renderAll();
+            showToast('已删除');
+        };
+
+        function renderThirdEmployeeButtons() {
+            const container = document.getElementById('thirdEmployeeBtnGroup');
+            if (!container) return;
+            let html =
+                `<button class="btn-item all-btn ${thirdSelectedEmployee === 'all' ? 'active' : ''}" onclick="selectThirdEmployee('all')">📋 全部</button>`;
+            employees.forEach(emp => {
+                const visible = getVisibleClients();
+                const count = visible.filter(c => c.employee === emp).length;
+                html +=
+                    `<button class="btn-item ${thirdSelectedEmployee === emp ? 'active' : ''}" onclick="selectThirdEmployee('${emp}')">👤 ${emp} (${count})</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.selectThirdEmployee = function(emp) {
+            thirdSelectedEmployee = emp;
+            renderThirdEmployeeButtons();
+            renderThirdList();
+            renderThirdDetail(null);
+        };
+
+        function renderReceptionEmployeeButtons() {
+            const container = document.getElementById('receptionEmpBtnGroup');
+            if (!container) return;
+            if (employees.length === 0) { container.innerHTML = '<span style="color:#a0aec0;font-size:0.6rem;">请添加</span>'; return; }
+            let html = '';
+            employees.forEach(emp => {
+                const visible = getVisibleClients();
+                const count = visible.filter(c => c.employee === emp).length;
+                html +=
+                    `<button class="btn-item ${selectedReceptionEmployee === emp ? 'active' : ''}" onclick="selectReceptionEmployee('${emp}')">👤 ${emp} <span style="font-size:0.5rem;opacity:0.6;">(${count})</span></button>`;
+            });
+            container.innerHTML = html;
+            const display = document.getElementById('selectedEmployeeDisplay');
+            if (selectedReceptionEmployee && employees.includes(selectedReceptionEmployee)) {
+                display.textContent = selectedReceptionEmployee;
+                document.getElementById('selectedEmployee').value = selectedReceptionEmployee;
+            } else if (employees.length > 0) {
+                selectedReceptionEmployee = employees[0];
+                display.textContent = employees[0];
+                document.getElementById('selectedEmployee').value = employees[0];
+                renderReceptionEmployeeButtons();
+            } else {
+                display.textContent = '未选择';
+                document.getElementById('selectedEmployee').value = '';
+            }
+        }
+
+        window.selectReceptionEmployee = function(emp) {
+            selectedReceptionEmployee = emp;
+            document.getElementById('selectedEmployee').value = emp;
+            document.getElementById('selectedEmployeeDisplay').textContent = emp;
+            renderReceptionEmployeeButtons();
+        };
+
+        window.addAccount = async function() {
+            const emp = document.getElementById('accountEmployeeSelect').value;
+            const url = document.getElementById('newAccountInput').value.trim();
+            const lang = document.getElementById('newAccountLang').value;
+            if (!emp) { alert('请选择员工'); return; }
+            if (!url) { alert('请输入链接'); return; }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) { alert('请输入有效链接'); return; }
+            const exists = (employeeAccounts[emp] || []).some(a => a.url === url);
+            if (exists) { alert('已存在'); return; }
+            const docRef = await addDoc(accountsCol, { 
+                employee: emp, 
+                url, 
+                lang: lang || '',
+                group: currentGroup.name 
+            });
+            if (!employeeAccounts[emp]) employeeAccounts[emp] = [];
+            employeeAccounts[emp].push({ url, lang: lang || '', id: docRef.id });
+            document.getElementById('newAccountInput').value = '';
+            renderAll();
+            showToast(`✅ 已添加`);
+        };
+
+        window.deleteAccount = async function(accountId) {
+            if (!confirm('确定删除？')) return;
+            await deleteDoc(doc(db, 'accounts', accountId));
+            for (const emp in employeeAccounts) {
+                employeeAccounts[emp] = employeeAccounts[emp].filter(a => a.id !== accountId);
+            }
+            renderAll();
+            showToast('已删除');
+        };
+
+        window.openEditAccountModal = function(accountId) {
+            let found = null,
+                foundEmp = '';
+            for (const emp in employeeAccounts) {
+                const acc = employeeAccounts[emp].find(a => a.id === accountId);
+                if (acc) { found = acc;
+                    foundEmp = emp; break; }
+            }
+            if (!found) { alert('不存在'); return; }
+            editingAccountId = accountId;
+            document.getElementById('editAccountUrl').value = found.url;
+            document.getElementById('editAccountEmployee').value = foundEmp;
+            document.getElementById('editAccountLang').value = found.lang || '';
+            document.getElementById('editAccountModal').classList.add('active');
+        };
+
+        window.closeEditAccountModal = function() {
+            document.getElementById('editAccountModal').classList.remove('active');
+            editingAccountId = null;
+        };
+
+        window.saveEditAccount = async function() {
+            if (!editingAccountId) { alert('没有选中'); return; }
+            const url = document.getElementById('editAccountUrl').value.trim();
+            const employee = document.getElementById('editAccountEmployee').value;
+            const lang = document.getElementById('editAccountLang').value;
+            if (!url || !employee) { alert('请填写完整'); return; }
+            await updateDoc(doc(db, 'accounts', editingAccountId), { 
+                url, employee, lang: lang || '', group: currentGroup.name 
+            });
+            for (const emp in employeeAccounts) {
+                employeeAccounts[emp] = employeeAccounts[emp].map(a => {
+                    if (a.id === editingAccountId) { return { ...a, url, employee, lang: lang || '' }; }
+                    return a;
+                });
+            }
+            closeEditAccountModal();
+            renderAll();
+            showToast('✅ 已更新');
+        };
+
+        window.copyNextAccount = function() {
+            const currentLang = selectedCopyLanguage;
+            if (currentLang === 'all') { showToast('⚠️ 请先选择具体语言'); return; }
+            if (!langCycleState[currentLang]) {
+                langCycleState[currentLang] = { cycleOrder: [...employees], copyIndex: 0, activeEmployees: {} };
+                employees.forEach(emp => { langCycleState[currentLang].activeEmployees[emp] = true; });
+            }
+            const state = langCycleState[currentLang];
+            let activeEmployees = state.cycleOrder.filter(emp =>
+                state.activeEmployees[emp] !== false &&
+                (employeeAccounts[emp] || []).length > 0 &&
+                (employeeAccounts[emp] || []).some(a => a.lang === currentLang)
+            );
+            if (activeEmployees.length === 0) {
+                showToast(`❌ 语言 "${currentLang}" 下没有可用账号`);
+                return;
+            }
+            if (state.copyIndex >= activeEmployees.length) state.copyIndex = 0;
+            const selectedEmp = activeEmployees[state.copyIndex];
+            state.copyIndex = (state.copyIndex + 1) % activeEmployees.length;
+            saveLangCycleState(currentLang);
+
+            let accounts = employeeAccounts[selectedEmp] || [];
+            accounts = accounts.filter(a => a.lang === currentLang);
+            if (accounts.length === 0) { copyNextAccount(); return; }
+
+            const randomIdx = Math.floor(Math.random() * accounts.length);
+            const url = accounts[randomIdx].url;
+            const username = extractUsername(url);
+
+            selectedReceptionEmployee = selectedEmp;
+            document.getElementById('selectedEmployee').value = selectedEmp;
+            document.getElementById('selectedEmployeeDisplay').textContent = selectedEmp;
+            renderReceptionEmployeeButtons();
+
+            navigator.clipboard.writeText(url).then(() => {
+                showToast(`✅ ${selectedEmp} | ${username}`);
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(`✅ ${selectedEmp} | ${username}`);
+            });
+            document.getElementById('receptionCode').value = username;
+        };
+
+        window.copyClientInfo = function(firebaseId) {
+            const client = clients.find(c => c.firebaseId === firebaseId);
+            if (!client) { showToast('❌ 客户不存在'); return; }
+
+            let timeStr = '';
+            if (client.time) {
+                const match = client.time.match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (match) {
+                    timeStr = match[2] + match[3];
+                } else {
+                    const clean = client.time.replace(/[年月]/g, '-').replace(/[日时]/g, ' ').replace(/[点分]/g, ':');
+                    const d = new Date(clean);
+                    if (!isNaN(d)) {
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        timeStr = month + day;
+                    } else {
+                        timeStr = client.time.substring(0, 10).replace(/-/g, '').slice(2);
+                    }
+                }
+            }
+
+            const name = client.name || '-';
+            const persona = client.persona || '';
+            const code = client.code || '';
+            const address = client.address || '-';
+
+            const copyText = `${timeStr || '----'} - ${name} - ${persona}/${code} - ${address}`;
+
+            navigator.clipboard.writeText(copyText).then(() => {
+                showToast(`✅ 已复制: ${copyText}`);
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = copyText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(`✅ 已复制: ${copyText}`);
+            });
+        };
+
+        function filterClients(list, searchParams) {
+            const { clientId, name, code, timeStart, timeEnd, employee, filter, langValue } = searchParams;
+            let result = list;
+            if (clientId) result = result.filter(c => (c.clientId || '').includes(clientId));
+            if (name) result = result.filter(c => (c.name || '').includes(name));
+            if (code) result = result.filter(c => (c.code || '').includes(code));
+            if (employee) result = result.filter(c => (c.employee || '').includes(employee));
+            if (timeStart || timeEnd) {
+                const start = timeStart ? parseTimeInput(timeStart) : null;
+                const end = timeEnd ? parseTimeInput(timeEnd) : null;
+                result = result.filter(c => isInTimeRange(c.time, start, end));
+            }
+            if (filter === 'added') result = result.filter(c => c.addedTime);
+            else if (filter === 'unadded') result = result.filter(c => !c.addedTime);
+            if (langValue && langValue !== 'all') {
+                result = result.filter(c => c.language === langValue);
+            }
+            return result;
+        }
+
+        function updateStats(list) {
+            const total = list.length;
+            const added = list.filter(c => c.addedTime).length;
+            const unadded = total - added;
+            document.getElementById('receptionTotal').textContent = total;
+            document.getElementById('receptionAdded').textContent = added;
+            document.getElementById('receptionUnadded').textContent = unadded;
+            document.getElementById('thirdTotal').textContent = total;
+            document.getElementById('thirdAdded').textContent = added;
+            document.getElementById('thirdUnadded').textContent = unadded;
+        }
+
+        function renderReceptionList(filtered) {
+            const container = document.getElementById('receptionClientList');
+            let list = getVisibleClients();
+            const searchParams = {
+                clientId: document.getElementById('searchClientId').value.trim(),
+                name: document.getElementById('searchName').value.trim(),
+                code: document.getElementById('searchCode').value.trim(),
+                timeStart: document.getElementById('searchTimeStart').value.trim(),
+                timeEnd: document.getElementById('searchTimeEnd').value.trim(),
+                employee: document.getElementById('searchEmployee').value.trim(),
+                filter: receptionFilter,
+                langValue: 'all'
+            };
+            list = filterClients(list, searchParams);
+            if (!container) return;
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无客户</div>';
+                updateStats(list);
+                return;
+            }
+            container.innerHTML = list.slice(0, 100).map((c, idx) => `
+                    <div class="client-item ${c.addedTime ? 'highlight' : ''}">
+                        <div class="client-row">
+                            <span class="client-index">${idx + 1}</span>
+                            <img src="${c.avatar || ''}" class="client-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2238%22 height=%2238%22 viewBox=%220 0 38 38%22%3E%3Crect width=%2238%22 height=%2238%22 fill=%22%23edf2f7%22/%3E%3Ctext x=%228%22 y=%2224%22 font-size=%2218%22 fill=%22%23a0aec0%22%3E📷%3C/text%3E%3C/svg%3E'">
+                            <div class="client-info">
+                                <div><span class="label">名字</span> <span class="value">${c.name || '-'}</span></div>
+                                <div><span class="label">ID</span> <span class="value">${c.clientId || '-'}</span></div>
+                                <div><span class="label">地址</span> <span class="value">${c.address || '-'}</span></div>
+                                <div><span class="label">人设</span> <span class="value">${c.persona || '-'}</span></div>
+                                <div><span class="label">语言</span> <span class="value">${c.language || '-'}</span></div>
+                                <div><span class="label">接待时间</span> <span class="value">${c.time || '-'}</span></div>
+                                <div><span class="label">接待号</span> <span class="value">${c.code || '-'}</span></div>
+                                <div><span class="label">员工</span> <span class="value">${c.employee || '-'}</span></div>
+                                <div><span class="label">添加账号</span> <span class="value" style="color:#2b6cb0;font-weight:600;">${c.addedAccount || '-'}</span></div>
+                                <div><span class="label">状态</span> <span class="value">${c.addedTime ? '已添加 ' + c.addedTime : '未添加'}</span></div>
+                            </div>
+                        </div>
+                        <div class="client-actions">
+                            ${c.addedTime ? `<button class="btn btn-sm btn-outline" onclick="unmarkAdded('${c.firebaseId}')">↩️ 取消</button>` : ''}
+                            <button class="btn btn-sm btn-warning" onclick="openEditModal('${c.firebaseId}')">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.firebaseId}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            updateStats(list);
+        }
+
+        function renderThirdList() {
+            let list = getVisibleClients();
+            if (thirdSelectedEmployee !== 'all') list = list.filter(c => c.employee === thirdSelectedEmployee);
+            const container = document.getElementById('thirdClientList');
+            if (!container) return;
+            const searchParams = {
+                clientId: document.getElementById('thirdSearchClientId').value.trim(),
+                name: document.getElementById('thirdSearchName').value.trim(),
+                code: document.getElementById('thirdSearchCode').value.trim(),
+                timeStart: document.getElementById('thirdSearchTimeStart').value.trim(),
+                timeEnd: document.getElementById('thirdSearchTimeEnd').value.trim(),
+                employee: document.getElementById('thirdSearchEmployee').value.trim(),
+                filter: thirdFilter,
+                langValue: thirdLangFilterValue
+            };
+            list = filterClients(list, searchParams);
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无客户</div>';
+                updateStats(list);
+                return;
+            }
+            container.innerHTML = list.slice(0, 100).map((c, idx) => {
+                const isAdded = !!c.addedTime;
+                return `
+                        <div class="third-client-card ${isAdded ? 'highlight' : ''}">
+                            <div class="client-row">
+                                <span class="client-index">${idx + 1}</span>
+                                <img src="${c.avatar || ''}" class="client-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2238%22 height=%2238%22 viewBox=%220 0 38 38%22%3E%3Crect width=%2238%22 height=%2238%22 fill=%22%23edf2f7%22/%3E%3Ctext x=%228%22 y=%2224%22 font-size=%2218%22 fill=%22%23a0aec0%22%3E📷%3C/text%3E%3C/svg%3E'">
+                                <div class="client-info">
+                                    <div><span class="label">名字</span> <span class="value">${c.name || '-'}</span></div>
+                                    <div><span class="label">ID</span> <span class="value">${c.clientId || '-'}</span></div>
+                                    <div><span class="label">地址</span> <span class="value">${c.address || '-'}</span></div>
+                                    <div><span class="label">人设</span> <span class="value">${c.persona || '-'}</span></div>
+                                    <div><span class="label">语言</span> <span class="value">${c.language || '-'}</span></div>
+                                    <div><span class="label">接待时间</span> <span class="value">${c.time || '-'}</span></div>
+                                    <div><span class="label">接待号</span> <span class="value">${c.code || '-'}</span></div>
+                                    <div><span class="label">员工</span> <span class="value">${c.employee || '-'}</span></div>
+                                    <div><span class="label">添加账号</span> <span class="value" style="color:#2b6cb0;font-weight:600;">${c.addedAccount || '-'}</span></div>
+                                    <div><span class="label">状态</span> <span class="value">${isAdded ? '已添加 ' + c.addedTime : '未添加'}</span></div>
+                                </div>
+                            </div>
+                            <div class="third-actions">
+                                <button class="btn btn-sm btn-outline" onclick="copyClientInfo('${c.firebaseId}')" style="font-size:0.55rem;padding:2px 10px;">📋 复制</button>
+                                <button class="btn btn-sm ${isAdded ? 'btn-disabled btn-outline' : 'btn-success'}" onclick="${isAdded ? '' : `markAdded('${c.firebaseId}')`}" ${isAdded ? 'disabled' : ''}>
+                                    ${isAdded ? '✅ 已添加' : '✅ 已添加'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+            updateStats(list);
+        }
+
+        function renderThirdDetail(filtered) {
+            const container = document.getElementById('thirdDetailList');
+            let list = getVisibleClients();
+            if (thirdSelectedEmployee !== 'all') list = list.filter(c => c.employee === thirdSelectedEmployee);
+            const searchParams = {
+                clientId: document.getElementById('thirdSearchClientId').value.trim(),
+                name: document.getElementById('thirdSearchName').value.trim(),
+                code: document.getElementById('thirdSearchCode').value.trim(),
+                timeStart: document.getElementById('thirdSearchTimeStart').value.trim(),
+                timeEnd: document.getElementById('thirdSearchTimeEnd').value.trim(),
+                employee: document.getElementById('thirdSearchEmployee').value.trim(),
+                filter: thirdFilter,
+                langValue: thirdLangFilterValue
+            };
+            list = filterClients(list, searchParams);
+            if (!container) return;
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无客户</div>';
+                updateStats(list);
+                return;
+            }
+            container.innerHTML = list.slice(0, 100).map((c, idx) => {
+                const isAdded = !!c.addedTime;
+                return `
+                        <div class="detail-client-card ${isAdded ? 'highlight' : ''}">
+                            <div class="client-row">
+                                <span class="client-index">${idx + 1}</span>
+                                <img src="${c.avatar || ''}" class="detail-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2242%22 height=%2242%22 viewBox=%220 0 42 42%22%3E%3Crect width=%2242%22 height=%2242%22 fill=%22%23edf2f7%22/%3E%3Ctext x=%229%22 y=%2226%22 font-size=%2220%22 fill=%22%23a0aec0%22%3E📷%3C/text%3E%3C/svg%3E'">
+                                <div class="client-info">
+                                    <div><span class="label">名字</span> <span class="value">${c.name || '-'}</span></div>
+                                    <div><span class="label">ID</span> <span class="value">${c.clientId || '-'}</span></div>
+                                    <div><span class="label">地址</span> <span class="value">${c.address || '-'}</span></div>
+                                    <div><span class="label">人设</span> <span class="value">${c.persona || '-'}</span></div>
+                                    <div><span class="label">语言</span> <span class="value">${c.language || '-'}</span></div>
+                                    <div><span class="label">接待时间</span> <span class="value">${c.time || '-'}</span></div>
+                                    <div><span class="label">接待号</span> <span class="value">${c.code || '-'}</span></div>
+                                    <div><span class="label">员工</span> <span class="value">${c.employee || '-'}</span></div>
+                                    <div><span class="label">添加账号</span> <span class="value" style="color:#2b6cb0;font-weight:600;">${c.addedAccount || '-'}</span></div>
+                                    <div><span class="label">状态</span> <span class="value">${isAdded ? '已添加 ' + c.addedTime : '未添加'}</span></div>
+                                </div>
+                            </div>
+                            <div class="detail-actions">
+                                <button class="btn btn-sm btn-outline" onclick="copyClientInfo('${c.firebaseId}')" style="font-size:0.55rem;padding:2px 10px;">📋 复制</button>
+                                <button class="btn btn-sm ${isAdded ? 'btn-disabled btn-outline' : 'btn-success'}" onclick="${isAdded ? '' : `markAdded('${c.firebaseId}')`}" ${isAdded ? 'disabled' : ''}>
+                                    ${isAdded ? '✅ 已添加' : '✅ 已添加'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+            updateStats(list);
+        }
+
+        window.removeEmployee = async function(emp) {
+            if (!confirm(`删除 "${emp}" ？`)) return;
+            const snap = await getDocs(query(employeesCol, 
+                where('name', '==', emp),
+                where('group', '==', currentGroup.name)));
+            for (const doc of snap.docs) await deleteDoc(doc.ref);
+            const accSnap = await getDocs(query(accountsCol, 
+                where('employee', '==', emp),
+                where('group', '==', currentGroup.name)));
+            for (const doc of accSnap.docs) await deleteDoc(doc.ref);
+            delete employeeAccounts[emp];
+            const allSnap = await getDocs(employeesCol);
+            const allEmployees = allSnap.docs.map(d => ({ ...d.data(), _id: d.id }));
+            if (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME) {
+                employees = allEmployees.filter(e => !e.group || e.group === MAIN_GROUP_NAME).map(e => e.name);
+            } else {
+                const prefix = currentGroup.name + '_';
+                employees = allEmployees.filter(e => e.group === currentGroup.name || e.name.startsWith(prefix)).map(e => e.name);
+            }
+            for (const lang in langCycleState) {
+                const state = langCycleState[lang];
+                state.cycleOrder = state.cycleOrder.filter(e => e !== emp);
+                delete state.activeEmployees[emp];
+                if (state.copyIndex >= state.cycleOrder.length) state.copyIndex = 0;
+                await saveLangCycleState(lang);
+            }
+            if (thirdSelectedEmployee === emp) thirdSelectedEmployee = 'all';
+            if (selectedReceptionEmployee === emp && employees.length > 0) {
+                selectedReceptionEmployee = employees[0];
+            } else if (employees.length === 0) { selectedReceptionEmployee = ''; }
+            renderAll();
+            showToast(`已删除: ${emp}`);
+        };
+
+        window.addEmployee = async function() {
+            const name = prompt('输入员工姓名：');
+            if (!name || !name.trim()) return;
+            let finalName = name.trim();
+            if (currentGroup && !currentGroup.isMain && currentGroup.name !== MAIN_GROUP_NAME) {
+                finalName = currentGroup.name + '_' + name.trim();
+            }
+            if (employees.includes(finalName)) { alert('该员工已存在'); return; }
+            await addDoc(employeesCol, { 
+                name: finalName, 
+                group: currentGroup?.name || MAIN_GROUP_NAME 
+            });
+            employeeAccounts[finalName] = [];
+            const allSnap = await getDocs(employeesCol);
+            const allEmployees = allSnap.docs.map(d => ({ ...d.data(), _id: d.id }));
+            if (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME) {
+                employees = allEmployees.filter(e => !e.group || e.group === MAIN_GROUP_NAME).map(e => e.name);
+            } else {
+                const prefix = currentGroup.name + '_';
+                employees = allEmployees.filter(e => e.group === currentGroup.name || e.name.startsWith(prefix)).map(e => e.name);
+            }
+            for (const lang in langCycleState) {
+                const state = langCycleState[lang];
+                if (!state.cycleOrder.includes(finalName)) state.cycleOrder.push(finalName);
+                state.activeEmployees[finalName] = true;
+                await saveLangCycleState(lang);
+            }
+            if (!selectedReceptionEmployee && employees.length > 0) {
+                selectedReceptionEmployee = employees[0];
+            }
+            renderAll();
+            showToast(`✅ 已添加: ${finalName}`);
+        };
+
+        window.markAdded = async function(firebaseId) {
+            try {
+                await updateDoc(doc(db, 'clients', firebaseId), { addedTime: getChinaTime() });
+                showToast('✅ 已标记');
+            } catch (e) { alert('标记失败'); }
+        };
+
+        window.unmarkAdded = async function(firebaseId) {
+            if (!confirm('取消标记？')) return;
+            try {
+                await updateDoc(doc(db, 'clients', firebaseId), { addedTime: null });
+                showToast('已取消');
+            } catch (e) { alert('操作失败'); }
+        };
+
+        window.deleteClient = async function(firebaseId) {
+            if (!confirm('确定删除？')) return;
+            try {
+                await deleteDoc(doc(db, 'clients', firebaseId));
+                showToast('已删除');
+            } catch (e) { alert('删除失败'); }
+        };
+
+        window.openEditModal = function(firebaseId) {
+            const client = clients.find(c => c.firebaseId === firebaseId);
+            if (!client) { alert('不存在'); return; }
+            editingClientId = firebaseId;
+            document.getElementById('editAvatarInput').value = client.avatar || '';
+            document.getElementById('editAvatarPreview').src = client.avatar || '';
+            document.getElementById('editAvatarPreview').style.display = client.avatar ? 'block' : 'none';
+            document.getElementById('editName').value = client.name || '';
+            document.getElementById('editClientId').value = client.clientId || '';
+            document.getElementById('editAddress').value = client.address || '';
+            document.getElementById('editPersona').value = client.persona || '';
+            document.getElementById('editTime').value = client.time || '';
+            document.getElementById('editAddedAccount').value = client.addedAccount || '';
+            document.getElementById('editLanguage').value = client.language || '';
+            document.getElementById('editCode').value = client.code || (receptionCodes.length > 0 ? receptionCodes[0] : '');
+            document.getElementById('editEmployee').value = client.employee || (employees.length ? employees[0] : '');
+            document.getElementById('editModal').classList.add('active');
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('editModal').classList.remove('active');
+            editingClientId = null;
+        };
+
+        window.saveEdit = async function() {
+            if (!editingClientId) { alert('没有选中'); return; }
+            const data = {
+                avatar: document.getElementById('editAvatarInput').value.trim(),
+                name: document.getElementById('editName').value.trim(),
+                clientId: document.getElementById('editClientId').value.trim(),
+                address: document.getElementById('editAddress').value.trim(),
+                persona: document.getElementById('editPersona').value.trim(),
+                time: document.getElementById('editTime').value.trim(),
+                code: document.getElementById('editCode').value,
+                employee: document.getElementById('editEmployee').value,
+                addedAccount: document.getElementById('editAddedAccount').value.trim(),
+                language: document.getElementById('editLanguage').value
+            };
+            if (!data.name) { alert('名字不能为空'); return; }
+            try {
+                await updateDoc(doc(db, 'clients', editingClientId), data);
+                closeEditModal();
+                showToast('✅ 已保存');
+            } catch (e) { alert('保存失败'); }
+        };
+
+        window.handleSubmit = async function() {
+            const avatar = document.getElementById('avatarInput').value.trim();
+            const name = document.getElementById('clientName').value.trim();
+            const clientId = document.getElementById('clientId').value.trim();
+            const address = document.getElementById('clientAddr').value.trim();
+            const persona = document.getElementById('clientPersona').value.trim();
+            const language = document.getElementById('clientLanguage').value || '';
+            let time = document.getElementById('receptionTime').value.trim();
+            const code = document.getElementById('selectedCode').value || (receptionCodes.length > 0 ? receptionCodes[0] : '');
+            const employee = document.getElementById('selectedEmployee').value || (employees.length > 0 ? employees[0] : '');
+            const addedAccount = document.getElementById('receptionCode').value.trim() || '';
+
+            if (!name) { alert('客户名字不能为空'); return; }
+            if (!employee) { alert('请选择员工'); return; }
+            if (!code) { alert('请选择接待号'); return; }
+            if (!time) time = getChinaTime();
+
+            const alertDiv = document.getElementById('duplicateAlert');
+            const compareDiv = document.getElementById('compareList');
+            alertDiv.style.display = 'none';
+            compareDiv.innerHTML = '';
+
+            if (clientId) {
+                const idQuery = query(clientsCol, where('clientId', '==', clientId));
+                const idSnap = await getDocs(idQuery);
+                if (!idSnap.empty) {
+                    const existing = idSnap.docs[0].data();
+                    alertDiv.style.display = 'block';
+                    alertDiv.innerHTML = `❌ ID重复: "${existing.name}" (${clientId})`;
+                    return;
+                }
+            }
+
+            const nameQuery = query(clientsCol, where('name', '==', name));
+            const nameSnap = await getDocs(nameQuery);
+            if (!nameSnap.empty) {
+                const sameList = nameSnap.docs.map(d => ({ firebaseId: d.id, ...d.data() }));
+                compareDiv.innerHTML =
+                    `<div style="background:#fef9e7;padding:6px;border-radius:10px;font-size:0.65rem;"><strong>⚠️ 同名客户 (${sameList.length}个)</strong> 悬停头像放大</div>`;
+                sameList.forEach(c => {
+                    compareDiv.innerHTML += `
+                            <div class="compare-card">
+                                <div class="compare-row">
+                                    <div class="compare-avatar-wrapper">
+                                        <img src="${c.avatar || ''}" class="avatar-large" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22 viewBox=%220 0 80 80%22%3E%3Crect width=%2280%22 height=%2280%22 fill=%22%23edf2f7%22/%3E%3Ctext x=%2218%22 y=%2246%22 font-size=%2228%22 fill=%22%23a0aec0%22%3E📷%3C/text%3E%3C/svg%3E'">
+                                        <span style="font-size:0.55rem;color:#718096;">🖱️ 放大</span>
+                                    </div>
+                                    <div class="compare-info">
+                                        <div><span class="lbl">名字</span> ${c.name}</div>
+                                        <div><span class="lbl">ID</span> ${c.clientId || '-'}</div>
+                                        <div><span class="lbl">语言</span> ${c.language || '-'}</div>
+                                        <div><span class="lbl">员工</span> ${c.employee || '-'}</div>
+                                    </div>
+                                </div>
+                                <div class="compare-actions">
+                                    <button class="btn btn-sm btn-success" onclick="confirmNewClient()">✅ 新客户</button>
+                                    <button class="btn btn-sm btn-danger" onclick="confirmDuplicate()">❌ 重复</button>
+                                </div>
+                            </div>
+                        `;
+                });
+                window._pendingNewClient = { avatar, name, clientId, address, persona, language, time, code, employee,
+                    addedAccount };
+                return;
+            }
+            await doAddClient(avatar, name, clientId, address, persona, language, time, code, employee, addedAccount);
+        };
+
+        window.confirmNewClient = async function() {
+            const data = window._pendingNewClient;
+            if (!data) return;
+            await doAddClient(data.avatar, data.name, data.clientId, data.address, data.persona, data.language, data.time,
+                data.code, data.employee, data.addedAccount);
+            document.getElementById('compareList').innerHTML = '';
+            window._pendingNewClient = null;
+        };
+
+        window.confirmDuplicate = function() {
+            document.getElementById('compareList').innerHTML = '';
+            document.getElementById('duplicateAlert').style.display = 'block';
+            document.getElementById('duplicateAlert').innerHTML = '⛔ 已取消录入。';
+            window._pendingNewClient = null;
+        };
+
+        async function doAddClient(avatar, name, clientId, address, persona, language, time, code, employee, addedAccount) {
+            await addDoc(clientsCol, {
+                avatar: avatar || '',
+                name,
+                clientId: clientId || '',
+                address: address || '',
+                persona: persona || '',
+                language: language || '',
+                time: time || '',
+                code: code || '',
+                employee: employee || '',
+                addedAccount: addedAccount || '',
+                addedTime: null,
+                createdAt: new Date().toISOString()
+            });
+            ['avatarInput', 'clientName', 'clientId', 'clientAddr', 'clientPersona', 'receptionTime', 'receptionCode']
+            .forEach(id => document.getElementById(id).value = '');
+            document.getElementById('avatarPreview').style.display = 'none';
+            document.getElementById('duplicateAlert').style.display = 'none';
+            document.getElementById('compareList').innerHTML = '';
+            showToast('✅ 录入成功');
+        }
+
+        window.applySearch = function() {
+            renderReceptionList(null);
+        };
+
+        window.clearSearch = function() {
+            ['searchClientId', 'searchName', 'searchCode', 'searchTimeStart', 'searchTimeEnd', 'searchEmployee']
+            .forEach(id => document.getElementById(id).value = '');
+            renderReceptionList(null);
+        };
+
+        window.applyThirdSearch = function() {
+            renderThirdDetail(null);
+        };
+
+        window.clearThirdSearch = function() {
+            ['thirdSearchClientId', 'thirdSearchName', 'thirdSearchCode', 'thirdSearchTimeStart', 'thirdSearchTimeEnd',
+                'thirdSearchEmployee'
+            ]
+            .forEach(id => document.getElementById(id).value = '');
+            renderThirdDetail(null);
+        };
+
+        window.goBack = function() {
+            document.getElementById('receptionApp').classList.remove('active');
+            document.getElementById('thirdApp').classList.remove('active');
+            document.getElementById('entryScreen').style.display = 'flex';
+        };
+
+        document.querySelector('.entry-screen').insertAdjacentHTML('beforeend', `
+            <div style="width:100%; text-align:center; margin-top:8px;">
+                <button class="btn btn-primary" onclick="openGroupManage()">👥 小组管理</button>
+            </div>
+        `);
+
+        window.renderGroupList = renderGroupList;
+        window.updateGroupLabel = updateGroupLabel;
+        window.currentGroup = currentGroup;
+        window.getVisibleClients = getVisibleClients;
+        window.openGroupManage = openGroupManage;
+
+        // 页面加载时预加载小组
+        (async () => {
+            await loadGroups();
+            console.log('页面已就绪');
+        })();
+
+    </script>
+</body>
+</html>
