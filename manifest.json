@@ -1,7 +1,7 @@
 {
-  "name": "双端客户系统",
-  "short_name": "客户系统",
-  "description": "客户管理与小组隔离系统",
+  "name": "风浪越大鱼越贵",
+  "short_name": "风浪越大鱼越贵",
+  "description": "风浪越大鱼越贵",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
