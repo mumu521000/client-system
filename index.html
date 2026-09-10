@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>双端客户系统 · 小组隔离</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2b6cb0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="客户系统">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232b6cb0'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white'>客</text></svg>">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: linear-gradient(135deg, #e8edf5 0%, #d5dde8 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
@@ -204,6 +214,9 @@
         <button class="entry-btn third" onclick="enterApp('third')">📊 三方端</button>
         <div style="width:100%; text-align:center; margin-top:8px; font-size:0.7rem; color:#4a5568;">
             <span class="group-tag">主小组: 木木</span> &nbsp;|&nbsp; <span class="group-tag">次级小组</span> 自行添加
+        </div>
+        <div style="width:100%; text-align:center; margin-top:8px;">
+            <button class="btn btn-primary" onclick="openGroupManage()">👥 小组管理</button>
         </div>
     </div>
 
@@ -706,7 +719,7 @@
             applyThirdSearch();
         };
 
-        // ===== 数据迁移：给旧数据打 group 字段 =====
+        // ===== 数据迁移 =====
         async function migrateOldData() {
             const collections = [
                 { col: receptionCodesCol, name: '接待号' },
@@ -723,10 +736,8 @@
                     for (const d of snap.docs) {
                         const data = d.data();
                         if (!data.group) {
-                            // 员工有前缀的除外，其他都归主小组
                             let targetGroup = MAIN_GROUP_NAME;
                             if (name === '员工' && data.name && data.name.includes('_')) {
-                                // 员工名带下划线的，前缀就是所属小组
                                 const prefix = data.name.split('_')[0];
                                 targetGroup = prefix;
                             }
@@ -736,7 +747,7 @@
                             count++;
                         }
                     }
-                    if (count > 0) console.log(`✅ 已迁移 ${name}: ${count} 条 → 归属小组`);
+                    if (count > 0) console.log(`✅ 已迁移 ${name}: ${count} 条`);
                 } catch(e) { console.error(`迁移 ${name} 失败`, e); }
             }
         }
@@ -752,7 +763,6 @@
                         isMain: true 
                     });
                     groups = [{ id: ref.id, name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true }];
-                    console.log('✅ 已创建主小组');
                 } else {
                     const docs = snap.docs;
                     const migrated = [];
@@ -766,14 +776,24 @@
                         } else if (data.name === MAIN_GROUP_NAME && data.passwordHash !== MAIN_GROUP_PWD_HASH) {
                             await updateDoc(doc(db, 'groups', d.id), { passwordHash: MAIN_GROUP_PWD_HASH });
                             data.passwordHash = MAIN_GROUP_PWD_HASH;
-                            migrated.push(data.name + '(重置)');
                         } else if (!data.passwordHash) {
                             await updateDoc(doc(db, 'groups', d.id), { passwordHash: MAIN_GROUP_PWD_HASH });
                             data.passwordHash = MAIN_GROUP_PWD_HASH;
-                            migrated.push(data.name + '(默认)');
                         }
                     }
                     groups = docs.map(d => ({ id: d.id, ...d.data() }));
+                    
+                    // 检查是否有重复的"木木"，只保留第一个
+                    const mumuList = groups.filter(g => g.name === MAIN_GROUP_NAME);
+                    if (mumuList.length > 1) {
+                        for (let i = 1; i < mumuList.length; i++) {
+                            await deleteDoc(doc(db, 'groups', mumuList[i].id));
+                        }
+                        groups = groups.filter(g => g.id !== mumuList.slice(1).map(x => x.id).find(id => id === g.id) || g.name !== MAIN_GROUP_NAME);
+                        groups = groups.filter(g => g.name !== MAIN_GROUP_NAME || g.id === mumuList[0].id);
+                        console.log('🗑️ 已清理重复的"木木"小组');
+                    }
+                    
                     const mainExists = groups.some(g => g.name === MAIN_GROUP_NAME);
                     if (!mainExists) {
                         const ref = await addDoc(groupsCol, { 
@@ -783,8 +803,6 @@
                         });
                         groups.push({ id: ref.id, name: MAIN_GROUP_NAME, passwordHash: MAIN_GROUP_PWD_HASH, isMain: true });
                     }
-                    if (migrated.length > 0) console.log('✅ 已自动迁移:', migrated.join(', '));
-                    console.log('📋 已加载小组:', groups.map(g => g.name));
                 }
             } catch (err) {
                 console.error('❌ 加载小组失败:', err);
@@ -802,6 +820,7 @@
             const password = document.getElementById('newGroupPasswordInput').value.trim();
             if (!name) { alert('请输入小组名称'); return; }
             if (!password) { alert('请输入密码'); return; }
+            if (name === MAIN_GROUP_NAME) { alert('主小组已存在'); return; }
             if (groups.some(g => g.name === name)) { alert('小组名已存在'); return; }
             const passwordHash = await sha256(password);
             const ref = await addDoc(groupsCol, { name, passwordHash, isMain: false });
@@ -1014,10 +1033,8 @@
             updateGroupLabel();
             renderGroupList();
 
-            // ===== 首次运行时迁移旧数据 =====
             await migrateOldData();
 
-            // ===== 员工：按当前小组过滤 =====
             const allEmpSnap = await getDocs(employeesCol);
             const allEmployees = allEmpSnap.docs.map(d => ({ ...d.data(), _id: d.id }));
             
@@ -1033,10 +1050,8 @@
             }
             console.log('当前小组:', currentGroup.name, '可见员工:', employees);
 
-            // ===== 语言：按当前小组过滤 =====
             const langSnap = await getDocs(query(languagesCol, where('group', '==', currentGroup.name)));
             if (langSnap.empty && (currentGroup.isMain || currentGroup.name === MAIN_GROUP_NAME)) {
-                // 主小组首次运行，创建默认语言
                 for (const lang of ['中文', '英语', '葡萄牙语', '西班牙语']) {
                     await addDoc(languagesCol, { name: lang, group: MAIN_GROUP_NAME });
                 }
@@ -1045,7 +1060,6 @@
                 languageTags = langSnap.docs.map(d => d.data().name);
             }
 
-            // ===== 员工账号：按当前小组过滤 =====
             const accSnap = await getDocs(query(accountsCol, where('group', '==', currentGroup.name)));
             employeeAccounts = {};
             accSnap.docs.forEach(doc => {
@@ -1056,11 +1070,9 @@
                 }
             });
 
-            // ===== 接待号：按当前小组过滤 =====
             const codeSnap = await getDocs(query(receptionCodesCol, where('group', '==', currentGroup.name)));
             receptionCodes = codeSnap.docs.map(d => d.data().code);
 
-            // ===== 循环设置：按当前小组过滤 =====
             const langCycleSnap = await getDocs(query(langCycleCol, where('group', '==', currentGroup.name)));
             langCycleState = {};
             langCycleSnap.docs.forEach(doc => {
@@ -2190,12 +2202,6 @@
             document.getElementById('entryScreen').style.display = 'flex';
         };
 
-        document.querySelector('.entry-screen').insertAdjacentHTML('beforeend', `
-            <div style="width:100%; text-align:center; margin-top:8px;">
-                <button class="btn btn-primary" onclick="openGroupManage()">👥 小组管理</button>
-            </div>
-        `);
-
         window.renderGroupList = renderGroupList;
         window.updateGroupLabel = updateGroupLabel;
         window.currentGroup = currentGroup;
@@ -2208,6 +2214,17 @@
             console.log('页面已就绪');
         })();
 
+    </script>
+
+    <!-- Service Worker 注册 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('✅ Service Worker 已注册:', reg.scope))
+                    .catch((err) => console.log('❌ Service Worker 注册失败:', err));
+            });
+        }
     </script>
 </body>
 </html>
